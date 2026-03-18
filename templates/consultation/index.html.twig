@@ -1,43 +1,220 @@
 {% extends 'base.html.twig' %}
 {% block title %}Consultations - CSI{% endblock %}
 {% block page_title %}<i class="fas fa-stethoscope me-2 text-primary"></i>Consultations{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div></div>
-    {% if is_granted('ROLE_MEDECIN') %}<a href="{{ path('app_consultation_new') }}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Nouvelle Consultation</a>{% endif %}
+{# ── En-tête page ── #}
+<div class="page-header">
+    <div>
+        <h1 class="page-title-h1">Consultations</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+            <span>/</span>
+            <span>Consultations</span>
+        </nav>
+    </div>
+    <div class="page-actions">
+        {% if is_granted('ROLE_MEDECIN') %}
+        <button class="btn btn-primary" onclick="CSI.openModal('modal-new-consultation')">
+            <i class="fas fa-plus me-2"></i>Nouvelle Consultation
+        </button>
+        {% endif %}
+    </div>
 </div>
-<div class="card">
-    <div class="card-header">
-        <form method="get" class="d-flex gap-2 flex-wrap">
-            <input type="text" name="search" value="{{ search }}" class="form-control form-control-sm" style="width:200px;" placeholder="Patient…">
-            <input type="date" name="date" value="{{ date_filter }}" class="form-control form-control-sm">
-            <select name="statut" class="form-select form-select-sm" style="width:140px;">
-                <option value="">Tous</option>
-                <option value="en_cours" {{ statut_filter == 'en_cours' ? 'selected' : '' }}>En cours</option>
-                <option value="terminee" {{ statut_filter == 'terminee' ? 'selected' : '' }}>Terminée</option>
-            </select>
-            <button type="submit" class="btn btn-primary btn-sm">Filtrer</button>
+
+{# ── Filtres ── #}
+<div class="card" style="margin-bottom:1rem">
+    <div class="card-body" style="padding:.75rem 1.25rem">
+        <form method="get" class="d-flex gap-2 flex-wrap align-items-end">
+            <div>
+                <label class="form-label" style="font-size:.8rem;margin-bottom:.2rem">Patient</label>
+                <input type="text" name="search" value="{{ search }}" class="form-control form-control-sm"
+                       style="width:200px;" placeholder="Nom du patient…">
+            </div>
+            <div>
+                <label class="form-label" style="font-size:.8rem;margin-bottom:.2rem">Date</label>
+                <input type="date" name="date" value="{{ date_filter }}" class="form-control form-control-sm">
+            </div>
+            <div>
+                <label class="form-label" style="font-size:.8rem;margin-bottom:.2rem">Statut</label>
+                <select name="statut" class="form-select form-select-sm" style="width:140px;">
+                    <option value="">Tous</option>
+                    <option value="en_cours"  {{ statut_filter == 'en_cours'  ? 'selected' : '' }}>En cours</option>
+                    <option value="terminee"  {{ statut_filter == 'terminee'  ? 'selected' : '' }}>Terminée</option>
+                    <option value="planifiee" {{ statut_filter == 'planifiee' ? 'selected' : '' }}>Planifiée</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-filter me-1"></i> Filtrer
+            </button>
+            {% if search or date_filter or statut_filter %}
+            <a href="{{ path('app_consultation_index') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-times me-1"></i> Réinitialiser
+            </a>
+            {% endif %}
         </form>
     </div>
+</div>
+
+{# ── Tableau consultations ── #}
+<div class="card">
     <div class="card-body p-0">
         <table class="table table-modern mb-0">
-            <thead><tr><th>Patient</th><th>Médecin</th><th>Motif</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Médecin</th>
+                    <th>Motif</th>
+                    <th>Date</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
             <tbody>
                 {% for c in pagination %}
                 <tr>
-                    <td><a href="{{ path('app_patient_show', {'id': c.patient.id}) }}" class="fw-semibold text-decoration-none" style="color:#1e40af;">{{ c.patient.nomComplet }}</a><div class="text-muted" style="font-size:11px;">{{ c.patient.telephone }}</div></td>
+                    <td>
+                        <a href="{{ path('app_patient_show', {'id': c.patient.id}) }}"
+                           class="fw-semibold text-decoration-none" style="color:#1e40af;">
+                            {{ c.patient.nomComplet }}
+                        </a>
+                        <div class="text-muted" style="font-size:11px;">{{ c.patient.telephone }}</div>
+                    </td>
                     <td><small>Dr. {{ c.medecin.nomComplet }}</small></td>
-                    <td><span style="font-size:13px;">{{ c.motif|slice(0,40) }}{% if c.motif|length > 40 %}…{% endif %}</span></td>
+                    <td>
+                        <span style="font-size:13px;">
+                            {{ c.motif|slice(0,45) }}{% if c.motif|length > 45 %}…{% endif %}
+                        </span>
+                    </td>
                     <td><small class="text-muted">{{ c.dateHeure|date('d/m/Y H:i') }}</small></td>
-                    <td><span class="badge {{ c.statut == 'terminee' ? 'bg-success' : 'bg-warning text-dark' }}">{{ c.statut == 'terminee' ? 'Terminée' : 'En cours' }}</span></td>
-                    <td><a href="{{ path('app_consultation_show', {'id': c.id}) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a></td>
+                    <td>
+                        {% if c.statut == 'terminee' %}
+                            <span class="badge bg-success">Terminée</span>
+                        {% elseif c.statut == 'en_cours' %}
+                            <span class="badge bg-warning text-dark">En cours</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Planifiée</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ path('app_consultation_show', {'id': c.id}) }}"
+                           class="btn btn-sm btn-outline-primary" title="Voir">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        {% if is_granted('ROLE_MEDECIN') %}
+                        <a href="{{ path('app_consultation_new') }}?rdv_id={{ c.id }}"
+                           class="btn btn-sm btn-outline-secondary ms-1" title="Éditer">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" class="text-center py-5 text-muted">Aucune consultation</td></tr>
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="fas fa-stethoscope fa-2x mb-2 d-block" style="color:#CBD5E1"></i>
+                        Aucune consultation trouvée
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% if pagination.pageCount > 1 %}<div class="card-footer bg-transparent">{{ knp_pagination_render(pagination) }}</div>{% endif %}
+    {% if pagination.pageCount > 1 %}
+    <div class="card-footer bg-transparent">{{ knp_pagination_render(pagination) }}</div>
+    {% endif %}
 </div>
+
+{# ── Modal Nouvelle Consultation ── #}
+{% if is_granted('ROLE_MEDECIN') %}
+<div id="modal-new-consultation" class="modal-overlay" style="display:none">
+    <div class="modal-dialog" style="max-width:650px">
+        <div class="modal-header">
+            <h5 class="modal-title">
+                <i class="fas fa-stethoscope me-2"></i>Nouvelle Consultation
+            </h5>
+            <button class="modal-close" onclick="CSI.closeModal('modal-new-consultation')">&times;</button>
+        </div>
+        <form method="POST" action="{{ path('app_consultation_new') }}">
+            <div class="modal-body">
+
+                {# Patient #}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        <i class="fas fa-user me-1 text-primary"></i> Patient <span class="text-danger">*</span>
+                    </label>
+                    <select name="patient_id" class="form-select" required id="sel-patient-consult">
+                        <option value="">— Sélectionner un patient —</option>
+                        {% for patient in patients %}
+                        <option value="{{ patient.id }}">
+                            {{ patient.nomComplet }}
+                            {% if patient.telephone %} — {{ patient.telephone }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {# Motif #}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        <i class="fas fa-comment-medical me-1 text-primary"></i> Motif <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" name="motif" class="form-control" required
+                           placeholder="Motif de la consultation…">
+                </div>
+
+                {# Constantes vitales (ligne) #}
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label" style="font-size:.82rem">Tension (mmHg)</label>
+                        <input type="text" name="tension_arterielle" class="form-control form-control-sm"
+                               placeholder="Ex: 120/80">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label" style="font-size:.82rem">Température (°C)</label>
+                        <input type="number" name="temperature" step="0.1" min="35" max="42"
+                               class="form-control form-control-sm" placeholder="37.0">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label" style="font-size:.82rem">FC (bpm)</label>
+                        <input type="number" name="frequence_cardiaque" min="30" max="250"
+                               class="form-control form-control-sm" placeholder="72">
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label" style="font-size:.82rem">Poids (kg)</label>
+                        <input type="number" name="poids" step="0.1" min="1" max="300"
+                               class="form-control form-control-sm" placeholder="70.0">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" style="font-size:.82rem">Taille (cm)</label>
+                        <input type="number" name="taille" step="0.1" min="30" max="250"
+                               class="form-control form-control-sm" placeholder="170">
+                    </div>
+                </div>
+
+                {# Observations #}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        <i class="fas fa-notes-medical me-1 text-primary"></i> Observations initiales
+                    </label>
+                    <textarea name="observations" class="form-control" rows="2"
+                              placeholder="Observations de départ…"></textarea>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light"
+                        onclick="CSI.closeModal('modal-new-consultation')">
+                    <i class="fas fa-times me-1"></i>Annuler
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Créer la consultation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

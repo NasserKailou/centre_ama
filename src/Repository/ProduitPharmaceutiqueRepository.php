@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\ProduitPharmaceutique;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -81,5 +82,55 @@ class ProduitPharmaceutiqueRepository extends ServiceEntityRepository
             ->where('p.actif = 1')
             ->getQuery()->getSingleScalarResult();
         return (float)$result;
+    }
+
+    // ─── getFilteredQueryBuilder ──────────────────────────────────────────
+    /**
+     * Retourne un QueryBuilder filtré pour la liste paginée des produits.
+     * Utilisé par PharmacieController::index() via KnpPaginatorBundle.
+     */
+    public function getFilteredQueryBuilder(
+        ?string $search    = null,
+        ?string $statut    = null,
+        ?string $categorie = null
+    ): QueryBuilder {
+        $qb = $this->createQueryBuilder('p')
+            ->where('p.actif = 1')
+            ->orderBy('p.designation', 'ASC');
+
+        if ($search) {
+            $qb->andWhere('p.designation LIKE :s OR p.dci LIKE :s OR p.reference LIKE :s')
+               ->setParameter('s', '%' . $search . '%');
+        }
+
+        if ($statut === 'rupture') {
+            $qb->andWhere('p.stockDisponible <= 0');
+        } elseif ($statut === 'alerte') {
+            $qb->andWhere('p.stockDisponible > 0')
+               ->andWhere('p.stockDisponible <= p.stockMinimum');
+        } elseif ($statut === 'disponible') {
+            $qb->andWhere('p.stockDisponible > p.stockMinimum');
+        }
+
+        if ($categorie) {
+            $qb->andWhere('p.categorie = :cat')
+               ->setParameter('cat', $categorie);
+        }
+
+        return $qb;
+    }
+
+    // ─── countAlertes ─────────────────────────────────────────────────────
+    /**
+     * Compte les produits en alerte (stock > 0 mais <= stock minimum).
+     */
+    public function countAlertes(): int
+    {
+        return (int)$this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->where('p.actif = 1')
+            ->andWhere('p.stockDisponible > 0')
+            ->andWhere('p.stockDisponible <= p.stockMinimum')
+            ->getQuery()->getSingleScalarResult();
     }
 }

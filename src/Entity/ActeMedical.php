@@ -69,5 +69,24 @@ class ActeMedical
      */
     public function getType(): ?string { return $this->categorie; }
 
+    /**
+     * Libellé lisible de la catégorie — utilisé dans les templates (acte.typeLibelle)
+     */
+    public function getTypeLibelle(): string
+    {
+        return match($this->categorie) {
+            'consultation' => 'Consultation',
+            'examen'       => 'Examen',
+            'traitement'   => 'Traitement',
+            'chirurgie'    => 'Chirurgie',
+            default        => $this->categorie ?? 'Autre',
+        };
+    }
+
+    /**
+     * Alias de getTypeLibelle() pour les templates utilisant categorieLibelle
+     */
+    public function getCategorieLibelle(): string { return $this->getTypeLibelle(); }
+
     public function __toString(): string { return $this->designation; }
 }

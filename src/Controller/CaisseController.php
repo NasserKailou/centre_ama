@@ -157,8 +157,13 @@ class CaisseController extends AbstractController
             $montantRecu   = (float)($data['montant_recu'] ?? 0);
             $monnaieRendue = max(0, $montantRecu - $facture->getPartPatient());
 
+            // Enregistrer montant reçu et monnaie rendue
+            $facture->setMontantRecu($montantRecu);
+            $facture->setMonnaieRendue($monnaieRendue);
+
             if ($montantRecu >= $facture->getPartPatient() && $facture->getPartPatient() > 0) {
                 $facture->setStatut(FactureGlobale::STATUT_PAYE);
+                $facture->setDatePaiement(new \DateTime());
 
                 // Décrémenter stocks si produits pharmaceutiques
                 if ($hasProduit) {

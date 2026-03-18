@@ -41,7 +41,7 @@
             <div class="form-group" style="margin:0">
                 <label class="form-label" style="font-size:.8rem">Période</label>
                 <div style="display:flex;gap:.3rem">
-                    {% for p, label in {'jour':'Aujourd\'hui','semaine':'Semaine','mois':'Ce mois','trimestre':'Trimestre','annee':'Année','custom':'Personnalisée'} %}
+                    {% for p, label in {'aujourd_hui':'Aujourd\'hui','semaine':'Semaine','mois':'Ce mois','trimestre':'Trimestre','annee':'Année','custom':'Personnalisée'} %}
                     <a href="?periode={{ p }}"
                        class="btn btn-sm {{ periode == p ? 'btn-primary' : 'btn-secondary' }}">{{ label }}</a>
                     {% endfor %}
@@ -113,7 +113,8 @@
             <i class="fas fa-coins"></i>
         </div>
         <div class="kpi-content">
-            <div class="kpi-value" style="font-size:1.1rem">{{ (stats.chiffreAffaires ?? 0)|number_format(0, ',', ' ') }}</div>
+            {# revenuTotal est la clé correcte retournée par buildStats() #}
+            <div class="kpi-value" style="font-size:1.1rem">{{ (stats.revenuTotal ?? 0)|number_format(0, ',', ' ') }}</div>
             <div class="kpi-label">CA ({{ currency }})</div>
         </div>
     </div>
@@ -143,10 +144,10 @@
 {# ── Graphiques ── #}
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
 
-    {# Évolution consultations #}
+    {# Évolution recettes #}
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title"><i class="fas fa-chart-line"></i> Évolution des consultations</h3>
+            <h3 class="card-title"><i class="fas fa-chart-line"></i> Évolution des recettes</h3>
         </div>
         <div class="card-body">
             <div class="chart-container">
@@ -182,22 +183,24 @@
                     <th>Médecin</th>
                     <th>Spécialité</th>
                     <th>Consultations</th>
-                    <th>Patients</th>
+                    <th>% CA</th>
                     <th>CA ({{ currency }})</th>
-                    <th>Moy/consult</th>
+                    <th>Part assurance</th>
+                    <th>Part patient</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in stats.parMedecin %}
                 <tr>
-                    <td><strong>Dr {{ row.prenom }} {{ row.nom }}</strong></td>
+                    <td><strong>Dr {{ row.prenom ?? '' }} {{ row.nom ?? '' }}</strong></td>
                     <td style="color:#607D8B;font-size:.85rem">{{ row.specialite ?? 'Généraliste' }}</td>
-                    <td><span class="badge badge-info">{{ row.consultations }}</span></td>
-                    <td>{{ row.patients ?? '—' }}</td>
-                    <td style="font-weight:600">{{ (row.chiffreAffaires ?? 0)|number_format(0, ',', ' ') }}</td>
-                    <td style="color:#607D8B;font-size:.85rem">
-                        {{ row.consultations > 0 ? ((row.chiffreAffaires ?? 0) / row.consultations)|number_format(0, ',', ' ') : '—' }}
-                    </td>
+                    {# nbConsultations est la clé retournée par buildStats() #}
+                    <td><span class="badge badge-info">{{ row.nbConsultations ?? 0 }}</span></td>
+                    <td style="color:#607D8B;font-size:.85rem">{{ row.pourcentage ?? 0 }}%</td>
+                    {# revenuTotal est la clé retournée par buildStats() #}
+                    <td style="font-weight:600">{{ (row.revenuTotal ?? 0)|number_format(0, ',', ' ') }}</td>
+                    <td style="font-size:.85rem">{{ (row.partAssurance ?? 0)|number_format(0, ',', ' ') }}</td>
+                    <td style="font-size:.85rem">{{ (row.partPatient ?? 0)|number_format(0, ',', ' ') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -218,14 +221,16 @@
         <div class="card-body" style="padding:0">
             <table class="table">
                 <thead>
-                    <tr><th>Acte</th><th>Qté</th><th>Total ({{ currency }})</th></tr>
+                    <tr><th>Acte</th><th>Nb</th><th>Total ({{ currency }})</th></tr>
                 </thead>
                 <tbody>
                     {% for acte in stats.topActes %}
                     <tr>
-                        <td style="font-size:.85rem">{{ acte.designation }}</td>
-                        <td><span class="badge badge-secondary">{{ acte.quantite }}</span></td>
-                        <td style="font-weight:600;font-size:.88rem">{{ acte.total|number_format(0, ',', ' ') }}</td>
+                        <td style="font-size:.85rem">{{ acte.designation ?? '—' }}</td>
+                        {# getActesRepartition() retourne 'count' (pas 'quantite') #}
+                        <td><span class="badge badge-secondary">{{ acte.count ?? acte.quantite ?? 0 }}</span></td>
+                        {# getActesRepartition() retourne 'montant' (pas 'total') #}
+                        <td style="font-weight:600;font-size:.88rem">{{ (acte.montant ?? acte.total ?? 0)|number_format(0, ',', ' ') }}</td>
                     </tr>
                     {% else %}
                     <tr><td colspan="3" style="text-align:center;color:#90A4AE;padding:1.5rem">Aucune donnée</td></tr>
@@ -250,9 +255,9 @@
                 <tbody>
                     {% for row in stats.parPartenaire %}
                     <tr>
-                        <td style="font-size:.85rem;font-weight:500">{{ row.nom }}</td>
-                        <td><span class="badge badge-info">{{ row.factures }}</span></td>
-                        <td style="font-weight:600;font-size:.88rem">{{ row.montant|number_format(0, ',', ' ') }}</td>
+                        <td style="font-size:.85rem;font-weight:500">{{ row.nom ?? '—' }}</td>
+                        <td><span class="badge badge-info">{{ row.nbFactures ?? row.factures ?? 0 }}</span></td>
+                        <td style="font-weight:600;font-size:.88rem">{{ (row.partAssurance ?? row.montant ?? 0)|number_format(0, ',', ' ') }}</td>
                     </tr>
                     {% else %}
                     <tr><td colspan="3" style="text-align:center;color:#90A4AE;padding:1.5rem">Aucune donnée</td></tr>
@@ -273,12 +278,12 @@
 Chart.defaults.font.family = "'Inter', sans-serif";
 Chart.defaults.color = '#607D8B';
 
-// ── Graphique consultations ──
+// ── Graphique évolution recettes ──
+// buildChartData() retourne : chartData.revenus.labels, chartData.revenus.values
 const ctxC = document.getElementById('chartConsultations')?.getContext('2d');
 if (ctxC) {
-    const labels = {{ chartData.labels|json_encode|raw }};
-    const data   = {{ chartData.consultations|json_encode|raw }};
-    const ca     = {{ chartData.chiffreAffaires|json_encode|raw }};
+    const labels = {{ chartData.revenus.labels|default([])|json_encode|raw }};
+    const ca     = {{ chartData.revenus.values|default([])|json_encode|raw }};
 
     new Chart(ctxC, {
         type: 'bar',
@@ -286,25 +291,12 @@ if (ctxC) {
             labels,
             datasets: [
                 {
-                    label: 'Consultations',
-                    data,
+                    label: 'CA ({{ currency }})',
+                    data: ca,
                     backgroundColor: 'rgba(26,115,232,.18)',
                     borderColor: 'var(--csi-primary)',
                     borderWidth: 2,
                     borderRadius: 4,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'CA ({{ currency }})',
-                    data: ca,
-                    type: 'line',
-                    borderColor: 'var(--csi-success)',
-                    backgroundColor: 'rgba(0,197,137,.08)',
-                    borderWidth: 2,
-                    tension: .4,
-                    fill: true,
-                    pointRadius: 4,
-                    yAxisID: 'y1'
                 }
             ]
         },
@@ -314,8 +306,7 @@ if (ctxC) {
             interaction: { mode: 'index', intersect: false },
             plugins: { legend: { position: 'top', labels: { boxWidth: 12 } } },
             scales: {
-                y:  { position: 'left',  title: { display: true, text: 'Consultations' }, beginAtZero: true },
-                y1: { position: 'right', title: { display: true, text: '{{ currency }}' }, beginAtZero: true, grid: { drawOnChartArea: false } }
+                y: { title: { display: true, text: '{{ currency }}' }, beginAtZero: true }
             }
         }
     });
@@ -330,8 +321,8 @@ if (ctxR) {
             labels: ['Actes médicaux', 'Pharmacie', 'Part assurance'],
             datasets: [{
                 data: [
-                    {{ stats.montantActes ?? 0 }},
-                    {{ stats.montantPharmacie ?? 0 }},
+                    {{ stats.revenuActes ?? 0 }},
+                    {{ stats.ventesPharmie ?? 0 }},
                     {{ stats.partAssurance ?? 0 }}
                 ],
                 backgroundColor: [

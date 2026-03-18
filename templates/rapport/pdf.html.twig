@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport CSI — {{ dateDebut|date('d/m/Y') }} au {{ dateFin|date('d/m/Y') }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #222; margin: 20px; }
+        h1 { font-size: 18px; color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 6px; }
+        h2 { font-size: 14px; color: #374151; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #1e40af; color: white; padding: 6px 8px; text-align: left; font-size: 11px; }
+        td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
+        tr:nth-child(even) td { background: #f9fafb; }
+        .kpi-grid { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+        .kpi-box { flex: 1; min-width: 120px; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px; text-align: center; }
+        .kpi-value { font-size: 16px; font-weight: bold; color: #1e40af; }
+        .kpi-label { font-size: 10px; color: #6b7280; margin-top: 2px; }
+        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+    </style>
+</head>
+<body>
+    <h1>
+        Centre de Santé Intégré — Rapport d'activité<br>
+        <small style="font-size:13px;color:#6b7280">Période : {{ dateDebut|date('d/m/Y') }} → {{ dateFin|date('d/m/Y') }}</small>
+    </h1>
+
+    {# KPIs globaux #}
+    <div class="kpi-grid">
+        <div class="kpi-box">
+            <div class="kpi-value">{{ stats.totalConsultations ?? 0 }}</div>
+            <div class="kpi-label">Consultations</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-value">{{ stats.totalPatients ?? 0 }}</div>
+            <div class="kpi-label">Patients</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-value">{{ stats.totalFactures ?? 0 }}</div>
+            <div class="kpi-label">Factures</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-value">{{ (stats.revenuTotal ?? 0)|number_format(0, ',', ' ') }}</div>
+            <div class="kpi-label">CA (FCFA)</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-value">{{ (stats.partAssurance ?? 0)|number_format(0, ',', ' ') }}</div>
+            <div class="kpi-label">Part assurance</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-value">{{ (stats.partPatient ?? 0)|number_format(0, ',', ' ') }}</div>
+            <div class="kpi-label">Part patient</div>
+        </div>
+    </div>
+
+    {# Par médecin #}
+    {% if stats.parMedecin is defined and stats.parMedecin|length > 0 %}
+    <h2>Activité par médecin</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Médecin</th>
+                <th>Spécialité</th>
+                <th>Consultations</th>
+                <th>CA (FCFA)</th>
+                <th>Part assurance</th>
+                <th>Part patient</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in stats.parMedecin %}
+            <tr>
+                <td>Dr {{ row.prenom ?? '' }} {{ row.nom ?? '' }}</td>
+                <td>{{ row.specialite ?? 'Généraliste' }}</td>
+                <td style="text-align:center">{{ row.nbConsultations ?? 0 }}</td>
+                <td style="text-align:right">{{ (row.revenuTotal ?? 0)|number_format(0, ',', ' ') }}</td>
+                <td style="text-align:right">{{ (row.partAssurance ?? 0)|number_format(0, ',', ' ') }}</td>
+                <td style="text-align:right">{{ (row.partPatient ?? 0)|number_format(0, ',', ' ') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {# Top actes #}
+    {% if stats.topActes is defined and stats.topActes|length > 0 %}
+    <h2>Top actes médicaux</h2>
+    <table>
+        <thead>
+            <tr><th>Acte</th><th>Nombre</th><th>Total (FCFA)</th></tr>
+        </thead>
+        <tbody>
+            {% for acte in stats.topActes %}
+            <tr>
+                <td>{{ acte.designation ?? '—' }}</td>
+                <td style="text-align:center">{{ acte.count ?? 0 }}</td>
+                <td style="text-align:right">{{ (acte.montant ?? 0)|number_format(0, ',', ' ') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {# Partenaires #}
+    {% if stats.parPartenaire is defined and stats.parPartenaire|length > 0 %}
+    <h2>Recettes par partenaire</h2>
+    <table>
+        <thead>
+            <tr><th>Partenaire</th><th>Factures</th><th>Part assurance (FCFA)</th></tr>
+        </thead>
+        <tbody>
+            {% for row in stats.parPartenaire %}
+            <tr>
+                <td>{{ row.nom ?? '—' }}</td>
+                <td style="text-align:center">{{ row.nbFactures ?? 0 }}</td>
+                <td style="text-align:right">{{ (row.partAssurance ?? 0)|number_format(0, ',', ' ') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <div class="footer">
+        Rapport généré le {{ "now"|date('d/m/Y à H:i') }} — Centre de Santé Intégré (CSI)
+    </div>
+</body>
+</html>

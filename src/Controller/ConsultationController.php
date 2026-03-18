@@ -42,11 +42,15 @@ class ConsultationController extends AbstractController
         $qb = $this->consultationRepo->getFilteredQueryBuilder($search, $date, $statut, $this->getUser());
         $pagination = $this->paginator->paginate($qb, $request->query->getInt('page', 1), 20);
 
+        // Données pour le modal de création rapide
+        $patients = $this->patientRepo->findBy([], ['nom' => 'ASC'], 200);
+
         return $this->render('consultation/index.html.twig', [
-            'pagination' => $pagination,
-            'search' => $search,
-            'date_filter' => $date,
+            'pagination'    => $pagination,
+            'search'        => $search,
+            'date_filter'   => $date,
             'statut_filter' => $statut,
+            'patients'      => $patients,
         ]);
     }
 
