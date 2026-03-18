@@ -1,0 +1,296 @@
+{% extends 'base.html.twig' %}
+{% block title %}Rendez-vous - CSI{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-bar">
+    <div>
+        <h1 class="page-heading"><i class="fas fa-calendar-alt"></i> Agenda des Rendez-vous</h1>
+        <nav><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}">Accueil</a></li>
+            <li class="breadcrumb-item active">Rendez-vous</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2">
+        {% if is_granted('ROLE_ASSISTANT') or is_granted('ROLE_ADMIN') %}
+        <button class="btn btn-primary" onclick="CSI.openModal('modal-new-rdv')">
+            <i class="fas fa-plus"></i> Nouveau RDV
+        </button>
+        {% endif %}
+        <div class="btn-group">
+            <a href="{{ path('app_rdv_index', {vue: 'calendrier'}) }}" class="btn {{ vue == 'calendrier' ? 'btn-primary' : 'btn-light' }}">
+                <i class="fas fa-calendar"></i> Calendrier
+            </a>
+            <a href="{{ path('app_rdv_index', {vue: 'liste'}) }}" class="btn {{ vue == 'liste' ? 'btn-primary' : 'btn-light' }}">
+                <i class="fas fa-list"></i> Liste
+            </a>
+        </div>
+    </div>
+</div>
+
+{# Filtres #}
+<div class="card mb-4">
+    <div class="card-body" style="padding:.9rem 1.25rem">
+        <form method="GET" class="d-flex gap-3 align-items-end flex-wrap">
+            <input type="hidden" name="vue" value="{{ vue }}">
+            <div>
+                <label class="form-label">Date début</label>
+                <input type="date" name="date_debut" value="{{ dateDebut }}" class="form-control">
+            </div>
+            <div>
+                <label class="form-label">Date fin</label>
+                <input type="date" name="date_fin" value="{{ dateFin }}" class="form-control">
+            </div>
+            <div>
+                <label class="form-label">Médecin</label>
+                <select name="medecin_id" class="form-select">
+                    <option value="">Tous les médecins</option>
+                    {% for med in medecins %}
+                    <option value="{{ med.id }}" {{ medecinId == med.id ? 'selected' : '' }}>
+                        Dr {{ med.nom }} {{ med.prenom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Statut</label>
+                <select name="statut" class="form-select">
+                    <option value="">Tous</option>
+                    <option value="planifie"  {{ statut == 'planifie'  ? 'selected' : '' }}>Planifié</option>
+                    <option value="confirme"  {{ statut == 'confirme'  ? 'selected' : '' }}>Confirmé</option>
+                    <option value="annule"    {{ statut == 'annule'    ? 'selected' : '' }}>Annulé</option>
+                    <option value="effectue"  {{ statut == 'effectue'  ? 'selected' : '' }}>Effectué</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filtrer</button>
+            <a href="{{ path('app_rdv_index') }}" class="btn btn-light"><i class="fas fa-times"></i> Reset</a>
+        </form>
+    </div>
+</div>
+
+{% if vue == 'calendrier' %}
+{# ════════ VUE CALENDRIER ════════ #}
+<div class="card">
+    <div class="card-header">
+        <h6><i class="fas fa-calendar-week"></i> Semaine du {{ dateDebut|date('d/m/Y') }} au {{ dateFin|date('d/m/Y') }}</h6>
+        <div class="d-flex gap-2">
+            <a href="{{ path('app_rdv_index', {vue:'calendrier', semaine: semainePrev}) }}" class="btn btn-light btn-sm">
+                <i class="fas fa-chevron-left"></i> Préc.
+            </a>
+            <a href="{{ path('app_rdv_index', {vue:'calendrier'}) }}" class="btn btn-outline-primary btn-sm">
+                Aujourd'hui
+            </a>
+            <a href="{{ path('app_rdv_index', {vue:'calendrier', semaine: semaineNext}) }}" class="btn btn-light btn-sm">
+                Suiv. <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="card-body" style="padding:.75rem">
+        {# En-tête jours #}
+        <div style="display:grid;grid-template-columns:80px repeat(7,1fr);gap:4px;margin-bottom:4px">
+            <div></div>
+            {% for jour in joursCalendrier %}
+            <div style="text-align:center;font-size:.8rem;font-weight:700;padding:.4rem;
+                background:{{ jour.isToday ? 'var(--csi-primary)' : 'var(--csi-light)' }};
+                color:{{ jour.isToday ? '#fff' : 'var(--csi-primary-dark)' }};border-radius:6px">
+                {{ jour.label }}<br>
+                <span style="font-size:1rem;font-weight:800">{{ jour.date|date('d') }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        {# Grille horaires #}
+        {% for heure in heures %}
+        <div style="display:grid;grid-template-columns:80px repeat(7,1fr);gap:4px;margin-bottom:2px;min-height:60px">
+            <div style="font-size:.72rem;color:#90A4AE;text-align:right;padding:.3rem .5rem;line-height:1">
+                {{ heure }}
+            </div>
+            {% for jour in joursCalendrier %}
+            <div style="border:1px solid #ECEFF1;border-radius:4px;padding:2px;position:relative;background:{{ jour.isToday ? '#F8FBFF' : '#fff' }}">
+                {% for rdv in rdvParJourHeure[jour.dateStr][heure] ?? [] %}
+                <a href="{{ path('app_rdv_show', {id: rdv.id}) }}"
+                   class="rdv-slot {{ rdv.statut }}"
+                   title="{{ rdv.patient.nom }} {{ rdv.patient.prenom }} — {{ rdv.motif }}">
+                    {{ rdv.patient.nom }} {{ rdv.patient.prenom[0] }}.
+                    <br><small>Dr {{ rdv.medecin.nom }}</small>
+                </a>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% else %}
+{# ════════ VUE LISTE ════════ #}
+<div class="card">
+    <div class="card-header">
+        <h6><i class="fas fa-list"></i> Liste des rendez-vous ({{ rdvs|length }})</h6>
+        <span class="badge-status badge-info">{{ dateDebut|date('d/m/Y') }} — {{ dateFin|date('d/m/Y') }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Patient</th>
+                    <th>Médecin</th>
+                    <th>Date & Heure</th>
+                    <th>Motif</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for rdv in rdvs %}
+            <tr>
+                <td style="color:#90A4AE;font-size:.78rem">#{{ rdv.id }}</td>
+                <td>
+                    <a href="{{ path('app_patient_show', {id: rdv.patient.id}) }}" style="font-weight:600">
+                        {{ rdv.patient.nom }} {{ rdv.patient.prenom }}
+                    </a>
+                    <div style="font-size:.75rem;color:#90A4AE">{{ rdv.patient.telephone }}</div>
+                </td>
+                <td>
+                    <span style="font-weight:600">Dr {{ rdv.medecin.nom }}</span>
+                    <div style="font-size:.75rem;color:#90A4AE">{{ rdv.medecin.specialite ?? 'Généraliste' }}</div>
+                </td>
+                <td style="white-space:nowrap">
+                    <strong>{{ rdv.dateHeure|date('d/m/Y') }}</strong><br>
+                    <span style="color:var(--csi-primary)">{{ rdv.dateHeure|date('H:i') }}</span>
+                </td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ rdv.motif }}">
+                    {{ rdv.motif }}
+                </td>
+                <td>
+                    {% if rdv.statut == 'confirme' %}
+                        <span class="badge-status badge-success">Confirmé</span>
+                    {% elseif rdv.statut == 'planifie' %}
+                        <span class="badge-status badge-warning">Planifié</span>
+                    {% elseif rdv.statut == 'annule' %}
+                        <span class="badge-status badge-danger">Annulé</span>
+                    {% elseif rdv.statut == 'effectue' %}
+                        <span class="badge-status badge-info">Effectué</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <a href="{{ path('app_rdv_show', {id: rdv.id}) }}" class="btn btn-info btn-icon btn-sm" title="Voir">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        {% if is_granted('ROLE_ASSISTANT') or is_granted('ROLE_ADMIN') %}
+                        <a href="{{ path('app_rdv_edit', {id: rdv.id}) }}" class="btn btn-warning btn-icon btn-sm" title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% if rdv.statut == 'planifie' %}
+                        <form method="POST" action="{{ path('app_rdv_confirm', {id: rdv.id}) }}" style="display:inline">
+                            <button type="submit" class="btn btn-success btn-icon btn-sm" title="Confirmer">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ path('app_rdv_cancel', {id: rdv.id}) }}" style="display:inline"
+                              onsubmit="return confirm('Annuler ce RDV ?')">
+                            <button type="submit" class="btn btn-danger btn-icon btn-sm" title="Annuler">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align:center;padding:2rem;color:#90A4AE">
+                <i class="fas fa-calendar-times fa-2x" style="display:block;margin-bottom:.5rem"></i>
+                Aucun rendez-vous pour cette période
+            </td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{# ════════ MODAL NOUVEAU RDV ════════ #}
+<div id="modal-new-rdv" class="modal-overlay">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-calendar-plus" style="color:var(--csi-primary)"></i> Nouveau Rendez-vous</h5>
+            <button class="modal-close" onclick="CSI.closeModal('modal-new-rdv')">&times;</button>
+        </div>
+        <form method="POST" action="{{ path('app_rdv_new') }}">
+            <div class="modal-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                    <div class="col-span-2" style="grid-column:1/-1">
+                        <label class="form-label"><i class="fas fa-user-injured"></i> Patient *</label>
+                        <div style="position:relative">
+                            <input type="text" id="rdv-patient-search" class="form-control" placeholder="Rechercher par nom ou téléphone...">
+                            <input type="hidden" name="patient_id" id="rdv-patient-id" required>
+                        </div>
+                        <div id="rdv-patient-info" style="display:none;margin-top:.4rem;padding:.5rem .8rem;background:var(--csi-light);border-radius:6px;font-size:.82rem"></div>
+                    </div>
+                    <div>
+                        <label class="form-label"><i class="fas fa-user-md"></i> Médecin *</label>
+                        <select name="medecin_id" class="form-select" required>
+                            <option value="">— Choisir —</option>
+                            {% for med in medecins %}
+                            <option value="{{ med.id }}" {{ medecinId == med.id ? 'selected' : '' }}>
+                                Dr {{ med.nom }} {{ med.prenom }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label"><i class="fas fa-calendar-day"></i> Date et heure *</label>
+                        <input type="datetime-local" name="date_heure" class="form-control" required
+                               min="{{ 'now'|date('Y-m-d\\TH:i') }}">
+                    </div>
+                    <div style="grid-column:1/-1">
+                        <label class="form-label"><i class="fas fa-notes-medical"></i> Motif *</label>
+                        <textarea name="motif" class="form-control" rows="2" required placeholder="Motif de la consultation..."></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label">Durée (minutes)</label>
+                        <select name="duree" class="form-select">
+                            <option value="15">15 min</option>
+                            <option value="30" selected>30 min</option>
+                            <option value="45">45 min</option>
+                            <option value="60">1 heure</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Notes</label>
+                        <input type="text" name="notes" class="form-control" placeholder="Notes optionnelles...">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" onclick="CSI.closeModal('modal-new-rdv')">Annuler</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('rdv-patient-search');
+    const patientIdInput = document.getElementById('rdv-patient-id');
+    const patientInfo = document.getElementById('rdv-patient-info');
+
+    if (searchInput) {
+        CSI.initPatientAutocomplete(searchInput, function(patient) {
+            patientIdInput.value = patient.id;
+            patientInfo.style.display = 'block';
+            patientInfo.innerHTML = `<i class="fas fa-user-check" style="color:var(--csi-success)"></i>
+                <strong>${patient.nom} ${patient.prenom}</strong> —
+                📞 ${patient.telephone} — N° ${patient.numeroDossier}`;
+        });
+    }
+});
+</script>
+{% endblock %}

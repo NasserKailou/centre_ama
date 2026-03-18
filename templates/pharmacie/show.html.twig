@@ -1,0 +1,241 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ produit.designation }} - Pharmacie CSI{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-bar">
+    <div>
+        <h1 class="page-heading"><i class="fas fa-pills"></i> {{ produit.designation }}</h1>
+        <nav><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}">Accueil</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('app_pharmacie_index') }}">Pharmacie</a></li>
+            <li class="breadcrumb-item active">{{ produit.designation }}</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ path('app_pharmacie_index') }}" class="btn btn-light"><i class="fas fa-arrow-left"></i> Retour</a>
+        {% if is_granted('ROLE_ADMIN') %}
+        <a href="{{ path('app_pharmacie_edit', {id: produit.id}) }}" class="btn btn-warning"><i class="fas fa-edit"></i> Modifier</a>
+        {% endif %}
+        <button onclick="CSI.openModal('modal-reappro')" class="btn btn-success">
+            <i class="fas fa-plus-circle"></i> Réapprovisionner
+        </button>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 2fr;gap:1.5rem">
+    {# Fiche produit #}
+    <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="card">
+            <div class="card-body" style="text-align:center;padding:1.5rem">
+                <div style="width:80px;height:80px;background:var(--csi-light);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:2rem;color:var(--csi-primary)">
+                    <i class="fas fa-pills"></i>
+                </div>
+                <h5 style="font-weight:800;margin-bottom:.25rem">{{ produit.designation }}</h5>
+                {% if produit.dci %}
+                <p style="color:#78909C;font-size:.85rem">DCI: {{ produit.dci }}</p>
+                {% endif %}
+                <div style="margin:1rem 0">
+                    {% if produit.stockDisponible <= 0 %}
+                    <span class="badge-status badge-danger" style="font-size:.9rem;padding:.4rem .9rem">
+                        <i class="fas fa-times-circle"></i> Rupture de stock
+                    </span>
+                    {% elseif produit.stockDisponible <= produit.stockMinimum %}
+                    <span class="badge-status badge-warning" style="font-size:.9rem;padding:.4rem .9rem">
+                        <i class="fas fa-exclamation-triangle"></i> Stock faible
+                    </span>
+                    {% else %}
+                    <span class="badge-status badge-success" style="font-size:.9rem;padding:.4rem .9rem">
+                        <i class="fas fa-check-circle"></i> En stock
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="total-box" style="margin-top:1rem">
+                    <div class="total-label">Prix unitaire</div>
+                    <div class="total-amount" style="font-size:1.5rem">{{ produit.prixVente|number_format(0,',',' ') }} {{ currency }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h6><i class="fas fa-info-circle"></i> Informations</h6></div>
+            <div class="card-body">
+                <dl style="display:grid;grid-template-columns:auto 1fr;gap:.5rem .75rem;font-size:.88rem">
+                    <dt style="color:#78909C;font-weight:600;white-space:nowrap">Référence</dt>
+                    <dd>{{ produit.reference ?? '—' }}</dd>
+                    <dt style="color:#78909C;font-weight:600">Catégorie</dt>
+                    <dd>{{ produit.categorie ?? '—' }}</dd>
+                    <dt style="color:#78909C;font-weight:600">Forme</dt>
+                    <dd>{{ produit.forme ?? '—' }}</dd>
+                    <dt style="color:#78909C;font-weight:600">Dosage</dt>
+                    <dd>{{ produit.dosage ?? '—' }}</dd>
+                    <dt style="color:#78909C;font-weight:600">Stock actuel</dt>
+                    <dd><strong style="font-size:1.1rem;color:{{ produit.stockDisponible <= 0 ? 'var(--csi-danger)' : 'var(--csi-success)' }}">
+                        {{ produit.stockDisponible }} {{ produit.unite ?? 'unités' }}
+                    </strong></dd>
+                    <dt style="color:#78909C;font-weight:600">Stock minimum</dt>
+                    <dd>{{ produit.stockMinimum ?? 10 }} {{ produit.unite ?? 'unités' }}</dd>
+                    <dt style="color:#78909C;font-weight:600">Prix d'achat</dt>
+                    <dd>{{ produit.prixAchat|number_format(0,',',' ') }} {{ currency }}</dd>
+                    <dt style="color:#78909C;font-weight:600">Fournisseur</dt>
+                    <dd>{{ produit.fournisseur ?? '—' }}</dd>
+                    {% if produit.datePeremption %}
+                    <dt style="color:#78909C;font-weight:600">Péremption</dt>
+                    <dd style="color:{{ produit.datePeremption < date() ? 'var(--csi-danger)' : '#263238' }}">
+                        {{ produit.datePeremption|date('d/m/Y') }}
+                    </dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {# Historique mouvements #}
+    <div style="display:flex;flex-direction:column;gap:1rem">
+        {# Stats stock #}
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+            <div class="stat-card stat-blue">
+                <div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
+                <div class="stat-body">
+                    <div class="stat-value">{{ stats.totalEntrees }}</div>
+                    <div class="stat-label">Entrées totales</div>
+                </div>
+            </div>
+            <div class="stat-card stat-orange">
+                <div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
+                <div class="stat-body">
+                    <div class="stat-value">{{ stats.totalSorties }}</div>
+                    <div class="stat-label">Sorties totales</div>
+                </div>
+            </div>
+            <div class="stat-card stat-green">
+                <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                <div class="stat-body">
+                    <div class="stat-value">{{ stats.valeurStock|number_format(0,',',' ') }}</div>
+                    <div class="stat-label">Valeur stock ({{ currency }})</div>
+                </div>
+            </div>
+        </div>
+
+        {# Historique des mouvements #}
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-exchange-alt"></i> Historique des mouvements</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead><tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th class="text-right">Quantité</th>
+                        <th class="text-right">Stock après</th>
+                        <th>Référence</th>
+                        <th>Effectué par</th>
+                    </tr></thead>
+                    <tbody>
+                    {% for mouv in mouvements %}
+                    <tr>
+                        <td>{{ mouv.createdAt|date('d/m/Y H:i') }}</td>
+                        <td>
+                            {% if mouv.type == 'entree' %}
+                            <span class="badge-status badge-success"><i class="fas fa-plus"></i> Entrée</span>
+                            {% elseif mouv.type == 'sortie' %}
+                            <span class="badge-status badge-warning"><i class="fas fa-minus"></i> Sortie (vente)</span>
+                            {% elseif mouv.type == 'ajustement' %}
+                            <span class="badge-status badge-info"><i class="fas fa-balance-scale"></i> Ajustement</span>
+                            {% elseif mouv.type == 'retour' %}
+                            <span class="badge-status badge-secondary"><i class="fas fa-undo"></i> Retour</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:right;font-weight:700;color:{{ mouv.type == 'entree' ? 'var(--csi-success)' : 'var(--csi-danger)' }}">
+                            {{ mouv.type == 'entree' ? '+' : '-' }}{{ mouv.quantite }}
+                        </td>
+                        <td style="text-align:right">{{ mouv.stockApres }}</td>
+                        <td style="font-size:.8rem;color:#78909C">{{ mouv.reference ?? '—' }}</td>
+                        <td style="font-size:.82rem">{{ mouv.user ? mouv.user.nom ~ ' ' ~ mouv.user.prenom : '—' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align:center;color:#90A4AE">Aucun mouvement enregistré</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ knp_pagination_render(mouvements) }}
+        </div>
+    </div>
+</div>
+
+{# Signal rupture #}
+{% if produit.stockDisponible <= 0 or produit.stockDisponible <= produit.stockMinimum %}
+<div class="alert alert-warning" style="margin-top:1.5rem">
+    <i class="fas fa-exclamation-triangle"></i>
+    <div>
+        <strong>Alerte stock !</strong>
+        {% if produit.stockDisponible <= 0 %}
+            Ce produit est en rupture de stock.
+        {% else %}
+            Le stock est en dessous du seuil minimum ({{ produit.stockMinimum }} {{ produit.unite ?? 'unités' }}).
+        {% endif %}
+        <form method="POST" action="{{ path('app_pharmacie_signal_rupture', {id: produit.id}) }}" style="display:inline">
+            <button type="submit" class="btn btn-warning btn-sm" style="margin-left:1rem">
+                <i class="fas fa-bell"></i> Signaler à l'admin
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{# Modal réapprovisionnement #}
+<div id="modal-reappro" class="modal-overlay">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-truck" style="color:var(--csi-success)"></i> Réapprovisionner</h5>
+            <button class="modal-close" onclick="CSI.closeModal('modal-reappro')">&times;</button>
+        </div>
+        <form method="POST" action="{{ path('app_pharmacie_reappro', {id: produit.id}) }}">
+            <div class="modal-body">
+                <div style="background:var(--csi-light);border-radius:8px;padding:.75rem;margin-bottom:1rem;font-size:.88rem">
+                    <strong>{{ produit.designation }}</strong> — Stock actuel :
+                    <span style="font-weight:800;color:{{ produit.stockDisponible <= 0 ? 'var(--csi-danger)' : 'var(--csi-warning)' }}">
+                        {{ produit.stockDisponible }} {{ produit.unite ?? 'unités' }}
+                    </span>
+                </div>
+                <div style="display:grid;gap:1rem">
+                    <div>
+                        <label class="form-label">Quantité reçue *</label>
+                        <input type="number" name="quantite" class="form-control" required min="1" placeholder="0">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                        <div>
+                            <label class="form-label">Prix d'achat unitaire</label>
+                            <input type="number" name="prix_achat" class="form-control" step="1"
+                                   value="{{ produit.prixAchat }}" min="0" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="form-label">Date de péremption</label>
+                            <input type="date" name="date_peremption" class="form-control">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Fournisseur</label>
+                        <input type="text" name="fournisseur" class="form-control"
+                               value="{{ produit.fournisseur ?? '' }}" placeholder="Nom du fournisseur">
+                    </div>
+                    <div>
+                        <label class="form-label">Numéro de lot / Référence</label>
+                        <input type="text" name="reference" class="form-control" placeholder="N° lot, BL...">
+                    </div>
+                    <div>
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Observations..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" onclick="CSI.closeModal('modal-reappro')">Annuler</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-plus-circle"></i> Enregistrer l'entrée</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

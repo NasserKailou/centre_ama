@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+
+  # ── Base de données MySQL 8 ────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: csi_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret_2024
+      MYSQL_DATABASE: csi_sante
+      MYSQL_USER: csi_user
+      MYSQL_PASSWORD: csi_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./migrations/Version20260318000000.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --sql-mode="STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "csi_user", "-pcsi_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - csi_net
+
+  # ── phpMyAdmin (développement uniquement) ─────────────
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: csi_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: csi_user
+      PMA_PASSWORD: csi_password
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - csi_net
+    profiles:
+      - dev   # Démarrer uniquement avec: docker compose --profile dev up
+
+  # ── Application PHP (production) ──────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: csi_app
+    restart: unless-stopped
+    environment:
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET:-change_this_32char_secret_key_now}
+      DATABASE_URL: "mysql://csi_user:csi_password@db:3306/csi_sante?serverVersion=8.0.32&charset=utf8mb4"
+      APP_NAME: "CSI - Centre de Santé Intégré"
+      CURRENCY: FCFA
+      TIMEZONE: Africa/Niamey
+    ports:
+      - "80:80"
+    volumes:
+      - ./var:/var/www/html/var
+      - ./public/uploads:/var/www/html/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - csi_net
+    profiles:
+      - prod  # Démarrer uniquement avec: docker compose --profile prod up
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  csi_net:
+    driver: bridge

@@ -1,0 +1,289 @@
+/* ============================================================
+   CSI — Styles spécifiques aux pages
+   ============================================================ */
+
+/* ── Dashboard charts ── */
+.chart-wrapper {
+  position: relative;
+  height: 260px;
+}
+
+/* ── Caisse / Facture ── */
+.facture-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+.facture-logo {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--csi-primary);
+}
+.facture-numero {
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: right;
+}
+.facture-numero span {
+  display: block;
+  font-size: 1.5rem;
+  color: var(--csi-primary);
+}
+
+.facture-table tfoot tr td {
+  font-weight: 700;
+  background: #F8FAFC;
+}
+.facture-total-row td {
+  font-size: 1.05rem;
+  color: var(--csi-primary);
+  border-top: 2px solid var(--csi-primary) !important;
+}
+
+/* ── Patient ─ Dossier ── */
+.dossier-section {
+  border-left: 3px solid var(--csi-primary);
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+}
+.dossier-section-title {
+  font-size: .8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--csi-primary);
+  margin-bottom: .5rem;
+}
+
+/* ── Pharmacie ─ Stock ── */
+.stock-bar {
+  height: 6px;
+  background: #ECEFF1;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: .3rem;
+}
+.stock-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+.stock-bar-fill.ok      { background: var(--csi-success); }
+.stock-bar-fill.warning { background: var(--csi-warning); }
+.stock-bar-fill.danger  { background: var(--csi-danger); }
+
+/* ── RDV ─ Calendrier slots ── */
+.rdv-slot {
+  padding: .5rem .75rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--csi-primary);
+  background: var(--csi-primary-light);
+  margin-bottom: .4rem;
+  font-size: .84rem;
+}
+.rdv-slot.urgent  { border-color: var(--csi-danger); background: #FCE4EC; }
+.rdv-slot.done    { border-color: var(--csi-success); background: #E8F5E9; opacity: .7; }
+.rdv-slot.pending { border-color: var(--csi-warning); background: #FFF3E0; }
+
+/* ── Timeline consultations ── */
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: .65rem; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--border-color);
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+.timeline-dot {
+  position: absolute;
+  left: -1.65rem; top: .3rem;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--csi-primary);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--csi-primary-light);
+}
+.timeline-date {
+  font-size: .72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: .3rem;
+}
+.timeline-content {
+  background: #F8FAFC;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: .85rem 1rem;
+}
+.timeline-content:hover { border-color: var(--csi-primary); }
+
+/* ── Rapport ─ Charts container ── */
+.report-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+/* ── Login ── */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0F1B35 0%, #1A2F5A 50%, #1A73E8 100%);
+  padding: 1.5rem;
+}
+.login-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 25px 60px rgba(0,0,0,.3);
+}
+.login-logo {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.login-logo-icon {
+  width: 72px; height: 72px;
+  background: linear-gradient(135deg, var(--csi-primary), #0F52BA);
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; color: #fff;
+  margin: 0 auto .75rem;
+  box-shadow: 0 8px 25px rgba(26,115,232,.35);
+}
+.login-logo-title {
+  font-size: 1.2rem; font-weight: 800; color: var(--text-primary);
+}
+.login-logo-sub {
+  font-size: .8rem; color: var(--text-muted);
+}
+.login-form .form-control {
+  padding: .65rem 1rem;
+  font-size: .92rem;
+}
+.login-submit {
+  width: 100%;
+  padding: .75rem;
+  font-size: .95rem;
+  margin-top: .5rem;
+}
+
+/* ── Reçu impression ── */
+@media print {
+  .recu-print { max-width: 80mm; margin: 0 auto; font-size: 11px; }
+  .recu-print .no-print { display: none; }
+}
+
+/* ── Animations ── */
+.fade-in {
+  animation: fadeIn .3s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in {
+  animation: slideInLeft .3s ease;
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Tooltip simple ── */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.8);
+  color: #fff; font-size: .72rem;
+  padding: .3rem .6rem; border-radius: 6px;
+  white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity .2s;
+}
+[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Notification panel ── */
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.12);
+  z-index: 1100;
+  overflow: hidden;
+}
+.notif-item {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid #F0F4F8;
+  display: flex; gap: .75rem;
+  cursor: pointer; transition: background var(--transition);
+  font-size: .84rem;
+}
+.notif-item:hover { background: #F8FAFC; }
+.notif-item:last-child { border-bottom: none; }
+.notif-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: .9rem;
+}
+
+/* ── Tag input ── */
+.tag {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .2rem .55rem;
+  background: var(--csi-primary-light);
+  color: var(--csi-primary);
+  border-radius: 20px;
+  font-size: .78rem; font-weight: 600;
+  cursor: default;
+}
+.tag-remove {
+  cursor: pointer; opacity: .6; font-size: .75em;
+}
+.tag-remove:hover { opacity: 1; }
+
+/* ── Step wizard ── */
+.steps {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.step {
+  display: flex; align-items: center; gap: .6rem;
+  font-size: .82rem; font-weight: 600; color: var(--text-muted);
+  flex: 1;
+}
+.step-num {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--border-color);
+  font-weight: 700; font-size: .82rem; flex-shrink: 0;
+  background: #fff;
+}
+.step.active { color: var(--csi-primary); }
+.step.active .step-num { border-color: var(--csi-primary); background: var(--csi-primary); color: #fff; }
+.step.done   { color: var(--csi-success); }
+.step.done   .step-num { border-color: var(--csi-success); background: var(--csi-success); color: #fff; }
+.step-divider { flex: 1; height: 2px; background: var(--border-color); margin: 0 .5rem; max-width: 60px; }

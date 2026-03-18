@@ -1,0 +1,165 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon profil — {{ app.user.prenom }} {{ app.user.nom }}{% endblock %}
+{% block page_title %}<i class="fas fa-user-circle"></i> Mon profil{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title-h1">Mon profil</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+            <span>/</span>
+            <span>Mon profil</span>
+        </nav>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:300px 1fr;gap:1.25rem">
+
+    {# Carte profil #}
+    <div style="display:flex;flex-direction:column;gap:1.25rem">
+        <div class="card" style="text-align:center">
+            <div class="card-body">
+                <div style="width:90px;height:90px;border-radius:50%;background:var(--csi-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:700;margin:0 auto 1rem">
+                    {{ app.user.prenom[0] }}{{ app.user.nom[0] }}
+                </div>
+                <h3 style="margin:0 0 .25rem;font-size:1.1rem">Dr {{ app.user.prenom }} {{ app.user.nom }}</h3>
+                <p style="color:#607D8B;font-size:.88rem;margin:0 0 .5rem">{{ app.user.specialite ?? 'Médecin généraliste' }}</p>
+                <p style="color:#90A4AE;font-size:.82rem;margin:0">{{ app.user.email }}</p>
+
+                <div style="margin-top:1rem;padding:.5rem;background:#E8F5E9;border-radius:8px">
+                    <span class="badge badge-success" style="font-size:.8rem">Compte actif</span>
+                </div>
+
+                <div style="margin-top:1rem;font-size:.82rem;color:#90A4AE;border-top:1px solid #ECEFF1;padding-top:1rem">
+                    <p style="margin:.2rem 0"><i class="fas fa-clock"></i> Dernière connexion :<br>{{ app.user.lastLogin ? app.user.lastLogin|date('d/m/Y à H:i') : 'N/A' }}</p>
+                </div>
+            </div>
+        </div>
+
+        {# Statistiques rapides #}
+        {% if stats is defined %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-chart-bar"></i> Mes statistiques</h3>
+            </div>
+            <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:.75rem">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-size:.88rem;color:#607D8B">Ce mois</span>
+                        <span style="font-weight:700;color:var(--csi-primary)">{{ stats.mois ?? 0 }} consultations</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-size:.88rem;color:#607D8B">Aujourd'hui</span>
+                        <span style="font-weight:700;color:var(--csi-success)">{{ stats.today ?? 0 }} consultations</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-size:.88rem;color:#607D8B">Total</span>
+                        <span style="font-weight:700">{{ stats.total ?? 0 }} consultations</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {# Formulaires modification #}
+    <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+        {# Modifier infos personnelles #}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-id-card"></i> Informations personnelles</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ path('app_medecin_update_profile') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('update_profile') }}">
+                    <div class="form-grid form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Nom</label>
+                            <input type="text" name="nom" value="{{ app.user.nom }}" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Prénom</label>
+                            <input type="text" name="prenom" value="{{ app.user.prenom }}" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Téléphone</label>
+                            <input type="tel" name="telephone" value="{{ app.user.telephone }}" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Spécialité</label>
+                            <input type="text" name="specialite" value="{{ app.user.specialite }}" class="form-control" placeholder="Ex: Médecine interne">
+                        </div>
+                    </div>
+                    <div style="text-align:right;margin-top:.5rem">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {# Changer mot de passe #}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-lock"></i> Changer le mot de passe</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ path('app_medecin_change_password') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('change_password') }}">
+                    <div class="form-grid form-grid-3">
+                        <div class="form-group">
+                            <label class="form-label">Mot de passe actuel</label>
+                            <input type="password" name="current_password" class="form-control" required autocomplete="current-password">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nouveau mot de passe</label>
+                            <input type="password" name="new_password" id="new-pwd" class="form-control" required minlength="8" autocomplete="new-password">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirmer</label>
+                            <input type="password" name="confirm_password" class="form-control" required autocomplete="new-password">
+                        </div>
+                    </div>
+                    <div style="margin-bottom:.75rem">
+                        <div id="pwd-strength" style="height:4px;border-radius:2px;background:#ECEFF1;transition:all .3s">
+                            <div id="pwd-bar" style="height:100%;width:0;border-radius:2px;transition:all .3s"></div>
+                        </div>
+                        <small id="pwd-hint" style="color:#90A4AE;font-size:.78rem">Minimum 8 caractères, incluant lettres et chiffres</small>
+                    </div>
+                    <div style="text-align:right">
+                        <button type="submit" class="btn btn-warning" style="color:#fff">
+                            <i class="fas fa-key"></i> Changer le mot de passe
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.getElementById('new-pwd')?.addEventListener('input', function() {
+    const v = this.value;
+    let score = 0;
+    if (v.length >= 8) score++;
+    if (/[A-Z]/.test(v)) score++;
+    if (/[0-9]/.test(v)) score++;
+    if (/[^A-Za-z0-9]/.test(v)) score++;
+    const bar = document.getElementById('pwd-bar');
+    const hint = document.getElementById('pwd-hint');
+    const colors = ['#EF5350','#FFA726','#FFC107','#66BB6A'];
+    const labels = ['Très faible','Faible','Moyen','Fort'];
+    bar.style.width = (score * 25) + '%';
+    bar.style.background = colors[score - 1] || '#ECEFF1';
+    hint.textContent = score > 0 ? 'Force : ' + (labels[score-1] || '') : 'Minimum 8 caractères';
+    hint.style.color = colors[score - 1] || '#90A4AE';
+});
+</script>
+{% endblock %}

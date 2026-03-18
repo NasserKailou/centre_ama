@@ -1,0 +1,108 @@
+{% extends 'base.html.twig' %}
+{% block title %}RDV #{{ rdv.id }} - CSI{% endblock %}
+{% block content %}
+<div class="breadcrumb-bar">
+    <div>
+        <h1 class="page-heading"><i class="fas fa-calendar-check"></i> Rendez-vous #{{ rdv.id }}</h1>
+        <nav><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}">Accueil</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('app_rdv_index') }}">Rendez-vous</a></li>
+            <li class="breadcrumb-item active">#{{ rdv.id }}</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ path('app_rdv_index') }}" class="btn btn-light"><i class="fas fa-arrow-left"></i> Retour</a>
+        {% if is_granted('ROLE_ASSISTANT') or is_granted('ROLE_ADMIN') %}
+        <a href="{{ path('app_rdv_edit', {id: rdv.id}) }}" class="btn btn-warning"><i class="fas fa-edit"></i> Modifier</a>
+        {% endif %}
+        {% if rdv.statut == 'confirme' or rdv.statut == 'planifie' %}
+        <a href="{{ path('app_consultation_new', {rdv_id: rdv.id}) }}" class="btn btn-primary">
+            <i class="fas fa-stethoscope"></i> Démarrer consultation
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+    <div class="card">
+        <div class="card-header"><h6><i class="fas fa-info-circle"></i> Détails du RDV</h6></div>
+        <div class="card-body">
+            <dl style="display:grid;grid-template-columns:140px 1fr;gap:.6rem .5rem;font-size:.9rem">
+                <dt style="color:#78909C;font-weight:600">Statut</dt>
+                <dd>
+                {% if rdv.statut == 'confirme' %}<span class="badge-status badge-success">Confirmé</span>
+                {% elseif rdv.statut == 'planifie' %}<span class="badge-status badge-warning">Planifié</span>
+                {% elseif rdv.statut == 'annule' %}<span class="badge-status badge-danger">Annulé</span>
+                {% elseif rdv.statut == 'effectue' %}<span class="badge-status badge-info">Effectué</span>
+                {% endif %}
+                </dd>
+                <dt style="color:#78909C;font-weight:600">Date & Heure</dt>
+                <dd><strong>{{ rdv.dateHeure|date('d/m/Y à H:i') }}</strong></dd>
+                <dt style="color:#78909C;font-weight:600">Motif</dt>
+                <dd>{{ rdv.motif }}</dd>
+                <dt style="color:#78909C;font-weight:600">Durée prévue</dt>
+                <dd>{{ rdv.duree ?? 30 }} minutes</dd>
+                {% if rdv.notes %}
+                <dt style="color:#78909C;font-weight:600">Notes</dt>
+                <dd>{{ rdv.notes }}</dd>
+                {% endif %}
+                <dt style="color:#78909C;font-weight:600">Créé le</dt>
+                <dd>{{ rdv.createdAt|date('d/m/Y à H:i') }}</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="card">
+            <div class="card-header"><h6><i class="fas fa-user-injured"></i> Patient</h6></div>
+            <div class="card-body">
+                <div style="display:flex;align-items:center;gap:1rem">
+                    <div style="width:48px;height:48px;background:var(--csi-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--csi-primary)">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:1rem">{{ rdv.patient.nom }} {{ rdv.patient.prenom }}</div>
+                        <div style="font-size:.82rem;color:#78909C">📞 {{ rdv.patient.telephone }}</div>
+                        <div style="font-size:.82rem;color:#78909C">Dossier N° {{ rdv.patient.numeroDossier }}</div>
+                    </div>
+                </div>
+                <div style="margin-top:.75rem">
+                    <a href="{{ path('app_patient_show', {id: rdv.patient.id}) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-folder-open"></i> Dossier complet
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><h6><i class="fas fa-user-md"></i> Médecin</h6></div>
+            <div class="card-body">
+                <div style="display:flex;align-items:center;gap:1rem">
+                    <div style="width:48px;height:48px;background:#E3F2FD;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--csi-primary)">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:1rem">Dr {{ rdv.medecin.nom }} {{ rdv.medecin.prenom }}</div>
+                        <div style="font-size:.82rem;color:#78909C">{{ rdv.medecin.specialite ?? 'Médecin généraliste' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_granted('ROLE_ASSISTANT') or is_granted('ROLE_ADMIN') %}
+{% if rdv.statut == 'planifie' %}
+<div class="card" style="margin-top:1.5rem">
+    <div class="card-body d-flex gap-2">
+        <form method="POST" action="{{ path('app_rdv_confirm', {id: rdv.id}) }}">
+            <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Confirmer</button>
+        </form>
+        <form method="POST" action="{{ path('app_rdv_cancel', {id: rdv.id}) }}"
+              onsubmit="return confirm('Annuler ce rendez-vous ?')">
+            <button type="submit" class="btn btn-danger"><i class="fas fa-times"></i> Annuler</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

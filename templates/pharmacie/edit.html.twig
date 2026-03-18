@@ -1,0 +1,191 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier — {{ produit.designation }}{% endblock %}
+{% block page_title %}<i class="fas fa-edit"></i> Modifier produit{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title-h1">Modifier — {{ produit.designation }}</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+            <span>/</span>
+            <a href="{{ path('app_pharmacie_index') }}">Pharmacie</a>
+            <span>/</span>
+            <a href="{{ path('app_pharmacie_show', {id: produit.id}) }}">{{ produit.designation }}</a>
+            <span>/</span>
+            <span>Modifier</span>
+        </nav>
+    </div>
+    <div class="page-actions">
+        <a href="{{ path('app_pharmacie_show', {id: produit.id}) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+</div>
+
+<form method="post" action="{{ path('app_pharmacie_edit', {id: produit.id}) }}" novalidate>
+    <input type="hidden" name="_token" value="{{ csrf_token('edit_produit_' ~ produit.id) }}">
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem">
+
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-pills"></i> Identification</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-grid form-grid-2">
+                        <div class="form-group" style="grid-column:1/-1">
+                            <label class="form-label required">Désignation <span class="text-danger">*</span></label>
+                            <input type="text" name="designation" value="{{ produit.designation }}" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">DCI</label>
+                            <input type="text" name="dci" value="{{ produit.dci }}" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Référence</label>
+                            <input type="text" name="reference" value="{{ produit.reference }}" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Catégorie</label>
+                            <select name="categorie" class="form-control">
+                                <option value="">— Choisir —</option>
+                                {% for cat in ['antibiotique','antiparasitaire','antifongique','antiviral','analgesique','anti-inflammatoire','antihypertenseur','antidiabetique','vitamines','vaccin','solution_injectable','autre'] %}
+                                <option value="{{ cat }}" {{ produit.categorie == cat ? 'selected' }}>{{ cat|replace({'_': ' '})|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Forme</label>
+                            <select name="forme" class="form-control">
+                                <option value="">— Choisir —</option>
+                                {% for f in ['comprime','gelule','sirop','injectable','suppositoire','pommade','collyre','inhalateur','patch','solution'] %}
+                                <option value="{{ f }}" {{ produit.forme == f ? 'selected' }}>{{ f|replace({'_': ' '})|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Dosage</label>
+                            <input type="text" name="dosage" value="{{ produit.dosage }}" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Unité</label>
+                            <select name="unite" class="form-control">
+                                <option value="">— Choisir —</option>
+                                {% for u in ['comprime','gelule','flacon','ampoule','boite','sachet','tube','patch'] %}
+                                <option value="{{ u }}" {{ produit.unite == u ? 'selected' }}>{{ u|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fournisseur</label>
+                            <input type="text" name="fournisseur" value="{{ produit.fournisseur }}" class="form-control">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-tag"></i> Tarification</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-grid form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Prix d'achat ({{ currency }})</label>
+                            <input type="number" name="prix_achat" step="1" min="0" value="{{ produit.prixAchat }}" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Prix de vente ({{ currency }}) <span class="text-danger">*</span></label>
+                            <input type="number" name="prix_vente" step="1" min="0" value="{{ produit.prixVente }}" class="form-control" required>
+                        </div>
+                    </div>
+                    {% set marge = produit.prixAchat > 0 ? ((produit.prixVente - produit.prixAchat) / produit.prixAchat * 100)|round(1) : 0 %}
+                    <div style="margin-top:.5rem;padding:.5rem .75rem;background:#E8F5E9;border-radius:6px;font-size:.82rem;color:#2E7D32">
+                        <i class="fas fa-info-circle"></i>
+                        Marge bénéficiaire actuelle : <strong>{{ marge }}%</strong>
+                        ({{ (produit.prixVente - produit.prixAchat)|number_format(0, ',', ' ') }} {{ currency }})
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-warehouse"></i> Stock</h3>
+                </div>
+                <div class="card-body">
+                    <div style="text-align:center;padding:1rem 0;margin-bottom:1rem;background:{{ produit.stockDisponible <= produit.stockMinimum ? '#FFF3E0' : '#E8F5E9' }};border-radius:8px">
+                        <div style="font-size:2rem;font-weight:800;color:{{ produit.stockDisponible <= produit.stockMinimum ? '#E65100' : '#2E7D32' }}">{{ produit.stockDisponible }}</div>
+                        <div style="font-size:.82rem;color:#607D8B">unités en stock</div>
+                        {% if produit.stockDisponible <= produit.stockMinimum %}
+                        <div style="margin-top:.4rem;font-size:.78rem;color:#E65100"><i class="fas fa-exclamation-triangle"></i> Stock faible !</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Seuil d'alerte minimum</label>
+                        <input type="number" name="stock_minimum" min="0" value="{{ produit.stockMinimum }}" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date de péremption</label>
+                        <input type="date" name="date_peremption" value="{{ produit.datePeremption ? produit.datePeremption|date('Y-m-d') : '' }}" class="form-control">
+                    </div>
+
+                    {# Ajustement stock #}
+                    <hr style="margin:1rem 0;border-color:#ECEFF1">
+                    <p style="font-size:.82rem;font-weight:600;color:#455A64;margin-bottom:.5rem">
+                        <i class="fas fa-exchange-alt"></i> Ajustement du stock
+                    </p>
+                    <div class="form-grid form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:.78rem">Type</label>
+                            <select name="mouvement_type" class="form-control">
+                                <option value="">— Aucun —</option>
+                                <option value="entree">Entrée (réception)</option>
+                                <option value="ajustement_positif">Ajustement +</option>
+                                <option value="ajustement_negatif">Ajustement −</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:.78rem">Quantité</label>
+                            <input type="number" name="mouvement_quantite" min="1" value="" class="form-control" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-size:.78rem">Motif du mouvement</label>
+                        <input type="text" name="mouvement_reference" class="form-control" placeholder="Référence BL, note...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-group" style="margin:0">
+                        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                            <input type="checkbox" name="actif" value="1" {{ produit.actif ? 'checked' }}
+                                   style="width:16px;height:16px;cursor:pointer">
+                            <span style="font-weight:600">Produit actif</span>
+                        </label>
+                        <small class="text-muted">Un produit inactif n'apparaît pas dans les factures</small>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:.75rem">
+                <i class="fas fa-save"></i> Enregistrer les modifications
+            </button>
+
+            <a href="{{ path('app_pharmacie_show', {id: produit.id}) }}" class="btn btn-secondary" style="width:100%;text-align:center">
+                <i class="fas fa-times"></i> Annuler
+            </a>
+        </div>
+
+    </div>
+</form>
+{% endblock %}

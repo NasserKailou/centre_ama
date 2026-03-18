@@ -1,0 +1,183 @@
+{% extends 'base.html.twig' %}
+{% block title %}Reçu {{ facture.numeroFacture }}{% endblock %}
+{% block page_title %}<i class="fas fa-receipt me-2 text-primary"></i>Reçu de Paiement{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ path('app_caisse_index') }}">Caisse</a></li>
+            <li class="breadcrumb-item active">{{ facture.numeroFacture }}</li>
+        </ol>
+    </nav>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="fas fa-print me-2"></i>Imprimer le Reçu
+        </button>
+        <a href="{{ path('app_caisse_new') }}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i>Nouvelle Facture
+        </a>
+    </div>
+</div>
+
+<!-- Reçu Imprimable -->
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card shadow-sm" id="recuPrintable">
+            <div class="card-body p-5">
+                <!-- En-tête -->
+                <div class="text-center border-bottom pb-4 mb-4">
+                    <div style="font-size:13px;font-weight:700;color:#1e40af;letter-spacing:1px;">
+                        CENTRE DE SANTÉ INTÉGRÉ — CSI
+                    </div>
+                    <div style="font-size:11px;color:#64748b;margin-top:4px;">
+                        Société à Responsabilité Limitée Unipersonnelle<br>
+                        Capital social: Un Million (1.000.000) de Francs CFA<br>
+                        Niamey, Quartier Couronne Nord, Boulevard Issa-korombé - Rue-27, Commune II<br>
+                        Tél: +227 20 36 03 88 / Cel: 94 34 03 88
+                    </div>
+                </div>
+
+                <!-- Titre Reçu -->
+                <div class="text-center mb-4">
+                    <div style="font-size:20px;font-weight:800;color:#1e40af;letter-spacing:2px;">
+                        REÇU N° {{ facture.numeroFacture }}
+                    </div>
+                    <div style="font-size:12px;color:#64748b;">
+                        Niamey, le {{ facture.createdAt|date('d/m/Y') }}
+                    </div>
+                </div>
+
+                <!-- Infos Patient -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <table style="width:100%;font-size:13px;">
+                            <tr>
+                                <td style="padding:4px 0;color:#64748b;width:40%;">Patient :</td>
+                                <td style="padding:4px 0;font-weight:700;">{{ facture.patient.nomComplet }}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:4px 0;color:#64748b;">Téléphone :</td>
+                                <td style="padding:4px 0;">{{ facture.patient.telephone }}</td>
+                            </tr>
+                            {% if facture.patient.age %}
+                            <tr>
+                                <td style="padding:4px 0;color:#64748b;">Âge :</td>
+                                <td style="padding:4px 0;">{{ facture.patient.age }} ans</td>
+                            </tr>
+                            {% endif %}
+                            {% if facture.partenaire and facture.partenaire.tauxCouverture > 0 %}
+                            <tr>
+                                <td style="padding:4px 0;color:#64748b;">Prise en charge :</td>
+                                <td style="padding:4px 0;">{{ facture.partenaire.nom }} à {{ facture.partenaire.tauxCouverture }}%</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td style="padding:4px 0;color:#64748b;">Prise en charge :</td>
+                                <td style="padding:4px 0;">Pas d'assurance - Personnel à 0.0%</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tableau des Prestations -->
+                <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;">
+                    <thead>
+                        <tr style="background:#1e40af;color:white;">
+                            <th style="padding:8px 12px;text-align:left;border-radius:4px 0 0 0;">Consultation / Examen</th>
+                            <th style="padding:8px 12px;text-align:center;">Qté</th>
+                            <th style="padding:8px 12px;text-align:right;">Montant</th>
+                            <th style="padding:8px 12px;text-align:right;">Taux</th>
+                            <th style="padding:8px 12px;text-align:right;border-radius:0 4px 0 0;">Net à payer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in facture.lignes %}
+                        {% set tauxCouv = facture.partenaire ? facture.partenaire.tauxCouverture : 0 %}
+                        {% set montant = ligne.montantLigne %}
+                        <tr style="border-bottom:1px solid #f1f5f9;">
+                            <td style="padding:10px 12px;font-weight:600;">{{ ligne.designation }}</td>
+                            <td style="padding:10px 12px;text-align:center;">{{ ligne.quantite }}</td>
+                            <td style="padding:10px 12px;text-align:right;">{{ montant|number_format(0, ',', ' ') }}</td>
+                            <td style="padding:10px 12px;text-align:right;color:#64748b;">{{ tauxCouv }}%</td>
+                            <td style="padding:10px 12px;text-align:right;font-weight:700;">
+                                {{ (montant * (1 - tauxCouv/100))|number_format(0, ',', ' ') }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Séparateur -->
+                <div style="border-top:2px dashed #e2e8f0;margin:16px 0;"></div>
+
+                <!-- Récapitulatif Financier -->
+                <table style="width:100%;font-size:13px;">
+                    <tr>
+                        <td style="padding:4px 0;color:#64748b;">Montant Total :</td>
+                        <td style="padding:4px 0;text-align:right;font-weight:600;">{{ facture.montantTotal|number_format(0, ',', ' ') }} FCFA</td>
+                    </tr>
+                    {% if facture.partAssurance > 0 %}
+                    <tr>
+                        <td style="padding:4px 0;color:#64748b;">Part Assurance ({{ facture.partenaire.tauxCouverture }}%) :</td>
+                        <td style="padding:4px 0;text-align:right;color:#0369a1;">{{ facture.partAssurance|number_format(0, ',', ' ') }} FCFA</td>
+                    </tr>
+                    {% endif %}
+                    <tr style="border-top:1px solid #e2e8f0;">
+                        <td style="padding:8px 0;font-size:14px;font-weight:700;">NET À PAYER (Patient) :</td>
+                        <td style="padding:8px 0;text-align:right;font-size:16px;font-weight:800;color:#1e40af;">
+                            {{ facture.partPatient|number_format(0, ',', ' ') }} FCFA
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:4px 0;color:#64748b;">Montant Reçu :</td>
+                        <td style="padding:4px 0;text-align:right;color:#059669;font-weight:600;">{{ facture.montantRecu|number_format(0, ',', ' ') }} FCFA</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:4px 0;color:#64748b;">Monnaie Rendue :</td>
+                        <td style="padding:4px 0;text-align:right;font-weight:600;">{{ facture.monnaieRendue|number_format(0, ',', ' ') }} FCFA</td>
+                    </tr>
+                </table>
+
+                <!-- Montant en Lettres -->
+                <div style="margin-top:16px;padding:12px;background:#f0f7ff;border-radius:8px;border-left:4px solid #1e40af;">
+                    <strong style="font-size:12px;color:#1e40af;">
+                        Arrêtez le présent reçu à la somme de :
+                        <span style="font-size:13px;">{{ facture.partPatient|number_format(0, ',', ' ') }} Francs CFA</span>
+                    </strong>
+                </div>
+
+                <!-- Pied de page -->
+                <div style="margin-top:32px;display:flex;justify-content:space-between;align-items:flex-end;">
+                    <div style="text-align:center;">
+                        <div style="font-size:12px;color:#64748b;margin-bottom:40px;">Patient(e)</div>
+                        <div style="border-top:1px solid #94a3b8;width:120px;text-align:center;padding-top:4px;font-size:11px;color:#94a3b8;">Signature</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:12px;color:#1e40af;font-weight:600;margin-bottom:8px;">
+                            <i class="fas fa-heart"></i> Meilleure santé !!!
+                        </div>
+                        <div style="font-size:11px;color:#64748b;">Caissier: {{ facture.caissier.nomComplet }}</div>
+                        <div style="border-top:1px solid #94a3b8;width:120px;text-align:center;padding-top:4px;margin:8px auto 0;font-size:11px;color:#94a3b8;">Signature & Cachet</div>
+                    </div>
+                </div>
+
+                <!-- Validité -->
+                <div style="margin-top:20px;text-align:center;font-size:11px;color:#94a3b8;border-top:1px dashed #e2e8f0;padding-top:12px;">
+                    Ce reçu est valable comme justificatif de paiement — {{ facture.createdAt|date('d/m/Y à H:i') }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    body { background: white; }
+    .no-print { display: none !important; }
+    .card { box-shadow: none !important; border: none !important; }
+    #recuPrintable { padding: 0 !important; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,321 @@
+{% extends 'base.html.twig' %}
+{% block title %}Dossier - {{ patient.nomComplet }} - CSI{% endblock %}
+{% block page_title %}<i class="fas fa-folder-open me-2 text-primary"></i>Dossier Patient{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ path('app_patient_index') }}">Patients</a></li>
+            <li class="breadcrumb-item active">{{ patient.nomComplet }}</li>
+        </ol>
+    </nav>
+    <div class="d-flex gap-2">
+        <a href="{{ path('app_patient_edit', {'id': patient.id}) }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-edit me-1"></i>Modifier
+        </a>
+        {% if is_granted('ROLE_MEDECIN') %}
+        <a href="{{ path('app_consultation_new') }}?patient_id={{ patient.id }}" class="btn btn-success btn-sm">
+            <i class="fas fa-stethoscope me-1"></i>Nouvelle Consultation
+        </a>
+        {% endif %}
+        {% if is_granted('ROLE_CAISSIER') %}
+        <a href="{{ path('app_caisse_new') }}?patient_id={{ patient.id }}" class="btn btn-primary btn-sm">
+            <i class="fas fa-cash-register me-1"></i>Facturer
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Infos Patient -->
+    <div class="col-lg-4">
+        <!-- Identité -->
+        <div class="card mb-4">
+            <div class="card-body text-center p-4">
+                <div class="user-avatar mx-auto mb-3" style="width:72px;height:72px;font-size:26px;">
+                    {{ patient.prenom|slice(0,1)|upper }}{{ patient.nom|slice(0,1)|upper }}
+                </div>
+                <h4 class="fw-bold mb-1">{{ patient.nomComplet }}</h4>
+                <div class="badge bg-primary-subtle text-primary mb-2">{{ patient.numeroDossier }}</div>
+                <div class="row g-2 text-start mt-3">
+                    <div class="col-6">
+                        <div class="bg-light rounded p-2 text-center">
+                            <div style="font-size:11px;color:#64748b;">Âge</div>
+                            <div class="fw-bold">{{ patient.age ?? '—' }} {% if patient.age %}ans{% endif %}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="bg-light rounded p-2 text-center">
+                            <div style="font-size:11px;color:#64748b;">Sexe</div>
+                            <div class="fw-bold">{{ patient.sexe == 'F' ? '♀ Féminin' : (patient.sexe == 'M' ? '♂ Masculin' : '—') }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="bg-light rounded p-2 text-center">
+                            <div style="font-size:11px;color:#64748b;">Groupe Sanguin</div>
+                            <div class="fw-bold text-danger">{{ patient.groupeSanguin ?? '—' }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="bg-light rounded p-2 text-center">
+                            <div style="font-size:11px;color:#64748b;">Consultations</div>
+                            <div class="fw-bold text-success">{{ dossier_medical.consultations|length }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fas fa-phone text-primary" style="width:16px;"></i>
+                    <span>{{ patient.telephone }}</span>
+                    {% if patient.telephone2 %}
+                    <span class="text-muted ms-2">/ {{ patient.telephone2 }}</span>
+                    {% endif %}
+                </div>
+                {% if patient.adresse %}
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fas fa-map-marker-alt text-primary" style="width:16px;"></i>
+                    <span class="text-muted">{{ patient.adresse }}</span>
+                </div>
+                {% endif %}
+                {% if patient.dateNaissance %}
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-birthday-cake text-primary" style="width:16px;"></i>
+                    <span class="text-muted">{{ patient.dateNaissance|date('d/m/Y') }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Alertes Médicales -->
+        {% if patient.allergies %}
+        <div class="alert alert-danger d-flex gap-2 mb-4">
+            <i class="fas fa-exclamation-triangle mt-1"></i>
+            <div>
+                <div class="fw-bold mb-1">Allergies connues</div>
+                <small>{{ patient.allergies }}</small>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Antécédents -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-header-title"><i class="fas fa-history me-2 text-warning"></i>Antécédents Médicaux</h6>
+            </div>
+            <div class="card-body">
+                {% if patient.antecedentsMedicaux %}
+                <div class="mb-2">
+                    <div class="text-muted" style="font-size:11px;text-transform:uppercase;font-weight:600;">Médicaux</div>
+                    <p style="font-size:13px;">{{ patient.antecedentsMedicaux }}</p>
+                </div>
+                {% endif %}
+                {% if patient.antecedentsChirurgicaux %}
+                <div class="mb-2">
+                    <div class="text-muted" style="font-size:11px;text-transform:uppercase;font-weight:600;">Chirurgicaux</div>
+                    <p style="font-size:13px;">{{ patient.antecedentsChirurgicaux }}</p>
+                </div>
+                {% endif %}
+                {% if patient.antecedentsFamiliaux %}
+                <div>
+                    <div class="text-muted" style="font-size:11px;text-transform:uppercase;font-weight:600;">Familiaux</div>
+                    <p style="font-size:13px;">{{ patient.antecedentsFamiliaux }}</p>
+                </div>
+                {% endif %}
+                {% if not patient.antecedentsMedicaux and not patient.antecedentsChirurgicaux and not patient.antecedentsFamiliaux %}
+                <p class="text-muted mb-0"><em>Aucun antécédent renseigné</em></p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contact Urgence -->
+        {% if patient.contactUrgence %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-header-title"><i class="fas fa-phone-alt me-2 text-danger"></i>Contact d'Urgence</h6>
+            </div>
+            <div class="card-body">
+                <div class="fw-semibold">{{ patient.contactUrgence }}</div>
+                <div class="text-muted">{{ patient.telephoneUrgence }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Dossier Médical -->
+    <div class="col-lg-8">
+        <!-- Nav Tabs -->
+        <ul class="nav nav-pills mb-3 gap-1" id="dossierTabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="pill" href="#consultations">
+                    <i class="fas fa-stethoscope me-1"></i>Consultations ({{ dossier_medical.consultations|length }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#factures">
+                    <i class="fas fa-file-invoice me-1"></i>Factures ({{ dossier_medical.factures|length }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#rdvs">
+                    <i class="fas fa-calendar me-1"></i>RDV ({{ dossier_medical.rdv|length }})
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Consultations -->
+            <div class="tab-pane fade show active" id="consultations">
+                {% for consult in dossier_medical.consultations %}
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary">{{ consult.dateHeure|date('d/m/Y H:i') }}</span>
+                            <span class="text-muted" style="font-size:13px;">Dr. {{ consult.medecin.nomComplet }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge {{ consult.statut == 'terminee' ? 'bg-success' : 'bg-warning text-dark' }}">
+                                {{ consult.statut == 'terminee' ? 'Terminée' : 'En cours' }}
+                            </span>
+                            <a href="{{ path('app_consultation_show', {'id': consult.id}) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Motif -->
+                            <div class="col-12">
+                                <div class="fw-semibold text-primary mb-1">
+                                    <i class="fas fa-comment-medical me-1"></i>Motif
+                                </div>
+                                <p class="mb-0">{{ consult.motif }}</p>
+                            </div>
+                            
+                            <!-- Constantes -->
+                            {% if consult.poids or consult.tensionArterielle or consult.temperature %}
+                            <div class="col-12">
+                                <div class="fw-semibold text-info mb-2">
+                                    <i class="fas fa-heartbeat me-1"></i>Constantes
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% if consult.poids %}<span class="badge bg-light text-dark border"><i class="fas fa-weight me-1"></i>{{ consult.poids }} kg</span>{% endif %}
+                                    {% if consult.taille %}<span class="badge bg-light text-dark border"><i class="fas fa-ruler me-1"></i>{{ consult.taille }} cm</span>{% endif %}
+                                    {% if consult.tensionArterielle %}<span class="badge bg-light text-dark border"><i class="fas fa-heartbeat me-1"></i>TA: {{ consult.tensionArterielle }}</span>{% endif %}
+                                    {% if consult.temperature %}<span class="badge bg-light text-dark border"><i class="fas fa-thermometer me-1"></i>T°: {{ consult.temperature }}</span>{% endif %}
+                                    {% if consult.frequenceCardiaque %}<span class="badge bg-light text-dark border"><i class="fas fa-heart me-1"></i>FC: {{ consult.frequenceCardiaque }}</span>{% endif %}
+                                    {% if consult.imc %}<span class="badge bg-info-subtle text-info border">IMC: {{ consult.imc }}</span>{% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Diagnostic -->
+                            {% if consult.diagnostic %}
+                            <div class="col-md-6">
+                                <div class="fw-semibold text-success mb-1"><i class="fas fa-diagnoses me-1"></i>Diagnostic</div>
+                                <p class="mb-0" style="font-size:13px;">{{ consult.diagnostic }}</p>
+                            </div>
+                            {% endif %}
+
+                            <!-- Ordonnance -->
+                            {% if consult.ordonnance %}
+                            <div class="col-md-6">
+                                <div class="fw-semibold text-warning mb-1"><i class="fas fa-prescription me-1"></i>Ordonnance</div>
+                                <p class="mb-0" style="font-size:13px;white-space:pre-line;">{{ consult.ordonnance }}</p>
+                            </div>
+                            {% endif %}
+
+                            <!-- Examens prescrits -->
+                            {% if consult.prescriptionsExamen|length > 0 %}
+                            <div class="col-12">
+                                <div class="fw-semibold text-purple mb-2" style="color:#7c3aed;"><i class="fas fa-vials me-1"></i>Examens prescrits</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for presc in consult.prescriptionsExamen %}
+                                    <span class="badge" style="background:{{ presc.statut == 'resultat_saisi' ? '#d1fae5' : '#fef9c3' }};color:{{ presc.statut == 'resultat_saisi' ? '#065f46' : '#713f12' }};border:1px solid {{ presc.statut == 'resultat_saisi' ? '#6ee7b7' : '#fde68a' }}; font-size:11px;">
+                                        <i class="fas fa-{{ presc.statut == 'resultat_saisi' ? 'check' : 'clock' }} me-1"></i>
+                                        {{ presc.acteMedical.libelle }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-stethoscope fa-3x mb-3 opacity-25 d-block"></i>
+                    Aucune consultation enregistrée
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Factures -->
+            <div class="tab-pane fade" id="factures">
+                {% for facture in dossier_medical.factures %}
+                <div class="card mb-2">
+                    <div class="card-body py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold text-primary">{{ facture.numeroFacture }}</div>
+                                <div class="text-muted" style="font-size:12px;">
+                                    {{ facture.createdAt|date('d/m/Y H:i') }} • Caissier: {{ facture.caissier.nomComplet }}
+                                    {% if facture.partenaire %} • {{ facture.partenaire.nom }}{% endif %}
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold" style="font-size:16px;">{{ facture.montantTotal|number_format(0, ',', ' ') }} FCFA</div>
+                                {% if facture.partenaire %}
+                                <div style="font-size:11px;color:#64748b;">
+                                    Assurance: {{ facture.partAssurance|number_format(0, ',', ' ') }} | Patient: {{ facture.partPatient|number_format(0, ',', ' ') }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="ms-3 d-flex align-items-center gap-2">
+                                <span class="badge {{ facture.statut == 'paye' ? 'bg-success' : (facture.statut == 'en_attente' ? 'bg-warning text-dark' : 'bg-secondary') }}">
+                                    {{ facture.statutLibelle }}
+                                </span>
+                                <a href="{{ path('app_caisse_recu', {'id': facture.id}) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-receipt"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-file-invoice fa-3x mb-3 opacity-25 d-block"></i>
+                    Aucune facture enregistrée
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Rendez-vous -->
+            <div class="tab-pane fade" id="rdvs">
+                {% for rdv in dossier_medical.rdv %}
+                <div class="card mb-2">
+                    <div class="card-body py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex gap-3 align-items-center">
+                                <div style="width:4px;height:40px;background:{{ rdv.statutColor }};border-radius:4px;"></div>
+                                <div>
+                                    <div class="fw-semibold">{{ rdv.dateHeure|date('d/m/Y à H:i') }}</div>
+                                    <div class="text-muted" style="font-size:12px;">Dr. {{ rdv.medecin.nomComplet }} • {{ rdv.motif }}</div>
+                                </div>
+                            </div>
+                            <span class="badge" style="background-color:{{ rdv.statutColor }};color:white;">{{ rdv.statutLibelle }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-calendar fa-3x mb-3 opacity-25 d-block"></i>
+                    Aucun rendez-vous
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html.twig' %}
+{% block title %}Caisse - CSI{% endblock %}
+{% block page_title %}<i class="fas fa-cash-register me-2 text-primary"></i>Caisse & Facturation{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-green"><i class="fas fa-coins"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats_jour.total_encaisse|number_format(0, ',', ' ') }}</div>
+                <div class="stat-label">Encaissé Aujourd'hui (FCFA)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-blue"><i class="fas fa-file-invoice"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats_jour.nb_factures }}</div>
+                <div class="stat-label">Factures du Jour</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-orange"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats_jour.nb_payees }}</div>
+                <div class="stat-label">Factures Payées</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <form method="get" class="d-flex gap-2 flex-wrap align-items-center">
+            <input type="text" name="search" value="{{ search }}" class="form-control form-control-sm" style="width:200px;" placeholder="Rechercher…">
+            <input type="date" name="date" value="{{ date_filter }}" class="form-control form-control-sm">
+            <select name="statut" class="form-select form-select-sm" style="width:140px;">
+                <option value="">Tous statuts</option>
+                <option value="paye" {{ statut_filter == 'paye' ? 'selected' : '' }}>Payé</option>
+                <option value="en_attente" {{ statut_filter == 'en_attente' ? 'selected' : '' }}>En attente</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Filtrer</button>
+        </form>
+        <a href="{{ path('app_caisse_new') }}" class="btn btn-success btn-sm">
+            <i class="fas fa-plus me-1"></i>Nouvelle Facture
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>N° Facture</th><th>Patient</th><th>Montant Total</th><th>Part Patient</th><th>Caissier</th><th>Date</th><th>Statut</th><th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for facture in pagination %}
+                <tr>
+                    <td><span class="badge bg-primary-subtle text-primary fw-semibold">{{ facture.numeroFacture }}</span></td>
+                    <td>
+                        <div class="fw-semibold" style="font-size:13px;">{{ facture.patient.nomComplet }}</div>
+                        <div class="text-muted" style="font-size:11px;">{{ facture.patient.telephone }}</div>
+                    </td>
+                    <td class="fw-bold">{{ facture.montantTotal|number_format(0, ',', ' ') }} FCFA</td>
+                    <td>
+                        <span class="fw-semibold text-primary">{{ facture.partPatient|number_format(0, ',', ' ') }} FCFA</span>
+                        {% if facture.partenaire %}<div style="font-size:10px;color:#64748b;">{{ facture.partenaire.nom }}</div>{% endif %}
+                    </td>
+                    <td><small class="text-muted">{{ facture.caissier.nomComplet }}</small></td>
+                    <td><small class="text-muted">{{ facture.createdAt|date('d/m/Y H:i') }}</small></td>
+                    <td>
+                        <span class="badge {{ facture.statut == 'paye' ? 'bg-success' : (facture.statut == 'en_attente' ? 'bg-warning text-dark' : 'bg-secondary') }}">
+                            {{ facture.statutLibelle }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ path('app_caisse_recu', {'id': facture.id}) }}" class="btn btn-outline-primary" title="Reçu">
+                                <i class="fas fa-receipt"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center py-5 text-muted">Aucune facture trouvée</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if pagination.pageCount > 1 %}
+    <div class="card-footer bg-transparent">{{ knp_pagination_render(pagination) }}</div>
+    {% endif %}
+</div>
+{% endblock %}

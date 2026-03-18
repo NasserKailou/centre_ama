@@ -1,0 +1,157 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier Patient — {{ patient.prenom }} {{ patient.nom }}{% endblock %}
+{% block page_title %}<i class="fas fa-user-edit"></i> Modifier Patient{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title-h1">Modifier — {{ patient.prenom }} {{ patient.nom }}</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+            <span>/</span>
+            <a href="{{ path('app_patient_index') }}">Patients</a>
+            <span>/</span>
+            <a href="{{ path('app_patient_show', {id: patient.id}) }}">{{ patient.nom }}</a>
+            <span>/</span>
+            <span>Modifier</span>
+        </nav>
+    </div>
+    <div class="page-actions">
+        <a href="{{ path('app_patient_show', {id: patient.id}) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+</div>
+
+<form method="post" action="{{ path('app_patient_edit', {id: patient.id}) }}" novalidate>
+    <input type="hidden" name="_token" value="{{ csrf_token('edit_patient_' ~ patient.id) }}">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+        {# ── IDENTITÉ ── #}
+        <div class="card" style="grid-column:1/-1">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-id-card"></i> Identité du patient</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-grid form-grid-3">
+                    <div class="form-group">
+                        <label class="form-label required">Nom <span class="text-danger">*</span></label>
+                        <input type="text" name="nom" value="{{ patient.nom }}" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Prénom <span class="text-danger">*</span></label>
+                        <input type="text" name="prenom" value="{{ patient.prenom }}" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Téléphone <span class="text-danger">*</span></label>
+                        <input type="tel" name="telephone" value="{{ patient.telephone }}" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date de naissance</label>
+                        <input type="date" name="date_naissance" value="{{ patient.dateNaissance ? patient.dateNaissance|date('Y-m-d') : '' }}" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sexe</label>
+                        <select name="sexe" class="form-control">
+                            <option value="">— Choisir —</option>
+                            <option value="M" {{ patient.sexe == 'M' ? 'selected' }}>Masculin</option>
+                            <option value="F" {{ patient.sexe == 'F' ? 'selected' }}>Féminin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Groupe sanguin</label>
+                        <select name="groupe_sanguin" class="form-control">
+                            <option value="">— Choisir —</option>
+                            {% for g in ['A+','A-','B+','B-','AB+','AB-','O+','O-'] %}
+                            <option value="{{ g }}" {{ patient.groupeSanguin == g ? 'selected' }}>{{ g }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Profession</label>
+                        <input type="text" name="profession" value="{{ patient.profession }}" class="form-control">
+                    </div>
+                    <div class="form-group" style="grid-column:1/-1">
+                        <label class="form-label">Adresse</label>
+                        <input type="text" name="adresse" value="{{ patient.adresse }}" class="form-control">
+                    </div>
+                    <div class="form-group" style="grid-column:1/-1">
+                        <label class="form-label">Contact d'urgence</label>
+                        <input type="text" name="contact_urgence" value="{{ patient.contactUrgence }}" class="form-control" placeholder="Nom — Téléphone — Lien de parenté">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ── ASSURANCE ── #}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-shield-alt"></i> Assurance / Partenaire</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Partenaire (assurance / mutuelle)</label>
+                    <select name="partenaire_id" class="form-control">
+                        <option value="">— Aucun partenaire —</option>
+                        {% for p in partenaires %}
+                        <option value="{{ p.id }}" {{ patient.partenaire and patient.partenaire.id == p.id ? 'selected' }}>
+                            {{ p.nom }} ({{ p.tauxPriseEnCharge }}%)
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Type d'assurance</label>
+                    <select name="assurance" class="form-control">
+                        <option value="">— Choisir —</option>
+                        {% for v in ['AMO','AMU','INAM','Mutuelle','Privée','Autre'] %}
+                        <option value="{{ v }}" {{ patient.assurance == v ? 'selected' }}>{{ v }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Numéro d'assurance</label>
+                    <input type="text" name="numero_assurance" value="{{ patient.numeroAssurance }}" class="form-control">
+                </div>
+            </div>
+        </div>
+
+        {# ── ANTÉCÉDENTS ── #}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-notes-medical"></i> Antécédents médicaux</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Allergies connues</label>
+                    <textarea name="allergies" class="form-control" rows="3">{{ patient.allergies }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Antécédents médicaux</label>
+                    <textarea name="antecedents_medicaux" class="form-control" rows="3">{{ patient.antecedentsMedicaux }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Antécédents chirurgicaux</label>
+                    <textarea name="antecedents_chirurgicaux" class="form-control" rows="2">{{ patient.antecedentsChirurgicaux }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Antécédents familiaux</label>
+                    <textarea name="antecedents_familiaux" class="form-control" rows="2">{{ patient.antecedentsFamiliaux }}</textarea>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem">
+        <a href="{{ path('app_patient_show', {id: patient.id}) }}" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Annuler
+        </a>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Enregistrer les modifications
+        </button>
+    </div>
+</form>
+{% endblock %}

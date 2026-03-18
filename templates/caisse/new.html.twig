@@ -1,0 +1,564 @@
+{% extends 'base.html.twig' %}
+{% block title %}Nouvelle Facture - Caisse{% endblock %}
+{% block page_title %}<i class="fas fa-cash-register me-2 text-primary"></i>Nouvelle Facture{% endblock %}
+
+{% block stylesheets %}
+<style>
+.ligne-row { border-bottom: 1px solid #f1f5f9; transition: background .15s; }
+.ligne-row:hover { background: #f8fafc; }
+.ligne-row td { padding: 10px 12px !important; vertical-align: middle; }
+.total-box { background: linear-gradient(135deg, #1e40af, #1d4ed8); color: white; border-radius: 12px; padding: 20px; }
+.patient-search-wrapper { position: relative; }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_caisse_index') }}">Caisse</a></li>
+        <li class="breadcrumb-item active">Nouvelle Facture</li>
+    </ol>
+</nav>
+
+<form id="factureForm" method="post">
+<div class="row g-4">
+    <!-- Colonne principale -->
+    <div class="col-lg-8">
+        <!-- Recherche Patient -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-header-title"><i class="fas fa-user me-2 text-primary"></i>Patient</h5>
+            </div>
+            <div class="card-body">
+                <div class="patient-search-wrapper mb-2">
+                    <label class="form-label fw-semibold">Recherche (nom, téléphone, dossier) <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" id="patientSearch" class="form-control" 
+                               placeholder="Saisissez 3 chiffres du téléphone ou le nom…" autocomplete="off">
+                    </div>
+                    <div id="patientDropdown" class="patient-search-dropdown" style="display:none;"></div>
+                    <input type="hidden" name="patient_id" id="patientId" required>
+                </div>
+                <!-- Infos patient sélectionné -->
+                <div id="patientInfo" class="d-none mt-3 p-3 bg-primary-subtle rounded">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="user-avatar" id="patientAvatar" style="width:42px;height:42px;font-size:16px;"></div>
+                        <div>
+                            <div class="fw-bold" id="patientNom"></div>
+                            <div class="text-muted" style="font-size:12px;" id="patientDetail"></div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" onclick="clearPatient()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prise en Charge -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-header-title"><i class="fas fa-handshake me-2 text-info"></i>Prise en Charge (Assurance)</h5>
+            </div>
+            <div class="card-body">
+                <select name="partenaire_id" id="partenaireSelect" class="form-select">
+                    <option value="">Sans prise en charge (Patient paie 100%)</option>
+                    {% for partenaire in partenaires %}
+                    <option value="{{ partenaire.id }}" data-taux="{{ partenaire.tauxCouverture }}">
+                        {{ partenaire.nom }} (Couverture: {{ partenaire.tauxCouverture }}%)
+                    </option>
+                    {% endfor %}
+                </select>
+                <div id="pecInfo" class="d-none mt-2 alert alert-info py-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Assurance couvre <span id="pecTaux">0</span>% — Patient paie <span id="pecPatient">100</span>%
+                </div>
+            </div>
+        </div>
+
+        <!-- Lignes de Facturation -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-header-title"><i class="fas fa-list me-2 text-success"></i>Prestations & Médicaments</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table mb-0" id="lignesTable">
+                    <thead>
+                        <tr style="background:#f8fafc;">
+                            <th style="width:40%;padding:10px 12px;font-size:12px;">Désignation</th>
+                            <th style="width:12%;padding:10px 12px;font-size:12px;">Qté</th>
+                            <th style="width:18%;padding:10px 12px;font-size:12px;">Prix Unit.</th>
+                            <th style="width:15%;padding:10px 12px;font-size:12px;">Montant</th>
+                            <th style="width:15%;padding:10px 12px;font-size:12px;">Stock</th>
+                            <th style="width:5%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="lignesBody">
+                        <!-- Rempli par JS -->
+                    </tbody>
+                </table>
+                <div class="p-3 border-top">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="showActeModal()">
+                            <i class="fas fa-plus-circle me-1"></i>Ajouter Acte Médical
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="showProduitModal()">
+                            <i class="fas fa-pills me-1"></i>Ajouter Médicament
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="card">
+            <div class="card-body">
+                <label class="form-label fw-semibold">Notes / Observations</label>
+                <textarea name="notes" class="form-control" rows="2" placeholder="Remarques éventuelles…"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Colonne récapitulatif -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-body p-0">
+                <div class="total-box rounded-top">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span style="font-size:14px;opacity:0.9;">Total Facture</span>
+                        <div style="font-size:22px;font-weight:700;" id="totalDisplay">0 FCFA</div>
+                    </div>
+                    <div id="pecDetail" class="d-none">
+                        <div class="d-flex justify-content-between mb-1" style="font-size:13px;opacity:0.9;">
+                            <span><i class="fas fa-building me-1"></i>Part Assurance (<span id="tauxAssDisplay">0</span>%)</span>
+                            <span id="partAssDisplay">0 FCFA</span>
+                        </div>
+                        <div class="d-flex justify-content-between" style="font-size:15px;font-weight:600;">
+                            <span><i class="fas fa-user me-1"></i>À payer par patient</span>
+                            <span id="partPatDisplay">0 FCFA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paiement -->
+                <div class="p-3">
+                    <label class="form-label fw-semibold">Montant Reçu du Patient (FCFA)</label>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text"><i class="fas fa-money-bill-wave text-success"></i></span>
+                        <input type="number" name="montant_recu" id="montantRecu" class="form-control form-control-lg" 
+                               placeholder="0" min="0" step="100" oninput="calculerMonnaie()">
+                        <span class="input-group-text">FCFA</span>
+                    </div>
+
+                    <div id="monnaieInfo" class="d-none alert alert-success py-2 mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span><i class="fas fa-coins me-1"></i>Monnaie rendue:</span>
+                            <strong id="monnaieRendue">0 FCFA</strong>
+                        </div>
+                    </div>
+
+                    <div id="insuffisantInfo" class="d-none alert alert-danger py-2 mb-3">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Montant insuffisant — Manque: <strong id="manqueDisplay">0 FCFA</strong>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="button" onclick="validerFacture()" class="btn btn-success btn-lg fw-bold" id="btnValider">
+                            <i class="fas fa-check-circle me-2"></i>Valider & Imprimer
+                        </button>
+                        <a href="{{ path('app_caisse_index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Annuler
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boutons rapides -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-header-title"><i class="fas fa-bolt me-2 text-warning"></i>Actes Rapides</h6>
+            </div>
+            <div class="card-body p-2">
+                {% for acte in actes_medicaux|slice(0,10) %}
+                <button type="button" 
+                        class="btn btn-outline-primary btn-sm m-1" 
+                        onclick="ajouterActeRapide({{ acte.id }}, '{{ acte.libelle|e('js') }}', {{ acte.prixNormal }}, {{ acte.prixPriseEnCharge ?? acte.prixNormal }})">
+                    {{ acte.libelle|slice(0,22) }}{% if acte.libelle|length > 22 %}…{% endif %}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden field for lignes JSON -->
+<input type="hidden" name="lignes_json" id="lignesJson">
+</form>
+
+<!-- Modal Acte Médical -->
+<div class="modal fade" id="acteModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-stethoscope me-2"></i>Ajouter un Acte Médical</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="acteSearch" class="form-control mb-3" placeholder="Rechercher un acte médical…">
+                <div id="acteList" style="max-height:350px;overflow-y:auto;">
+                    {% set categories = {} %}
+                    {% for acte in actes_medicaux %}
+                    {% set cat = acte.categorie ?? 'Autre' %}
+                    <div class="acte-item border rounded p-3 mb-2 cursor-pointer" 
+                         style="cursor:pointer;transition:background .15s;"
+                         data-id="{{ acte.id }}"
+                         data-libelle="{{ acte.libelle }}"
+                         data-prix-normal="{{ acte.prixNormal }}"
+                         data-prix-pec="{{ acte.prixPriseEnCharge ?? acte.prixNormal }}"
+                         onmouseover="this.style.background='#f0f7ff'" 
+                         onmouseout="this.style.background=''"
+                         onclick="ajouterActe(this)">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-semibold">{{ acte.libelle }}</span>
+                                <span class="badge bg-secondary ms-2" style="font-size:10px;">{{ acte.typeLibelle }}</span>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-primary">{{ acte.prixNormal|number_format(0, ',', ' ') }} FCFA</div>
+                                {% if acte.prixPriseEnCharge %}
+                                <div style="font-size:11px;color:#64748b;">PEC: {{ acte.prixPriseEnCharge|number_format(0, ',', ' ') }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Médicament -->
+<div class="modal fade" id="produitModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-pills me-2"></i>Ajouter un Médicament</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="produitSearch" class="form-control mb-3" 
+                       placeholder="Rechercher par nom ou DCI…" oninput="searchProduit(this.value)">
+                <div id="produitResults" style="max-height:300px;overflow-y:auto;"></div>
+                
+                <div id="produitSelected" class="d-none mt-3 p-3 bg-primary-subtle rounded">
+                    <div class="fw-bold" id="produitSelectedNom"></div>
+                    <div class="row g-2 mt-2">
+                        <div class="col-8">
+                            <label class="form-label" style="font-size:12px;">Quantité</label>
+                            <input type="number" id="produitQte" class="form-control" value="1" min="1">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label" style="font-size:12px;">Stock</label>
+                            <div class="form-control-plaintext fw-bold" id="produitStock">—</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary w-100 mt-3" onclick="confirmerProduit()">
+                        <i class="fas fa-plus me-1"></i>Ajouter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+let lignes = [];
+let selectedProduit = null;
+let tauxAssurance = 0;
+
+// Init recherche patient
+const patientInput = document.getElementById('patientSearch');
+const patientDropdown = document.getElementById('patientDropdown');
+const patientIdField = document.getElementById('patientId');
+
+initPatientSearch(patientInput, patientIdField, patientDropdown);
+
+patientInput.addEventListener('patientSelected', (e) => {
+    const p = e.detail;
+    document.getElementById('patientInfo').classList.remove('d-none');
+    document.getElementById('patientAvatar').textContent = p.prenom.charAt(0) + p.nom.charAt(0).toUpperCase();
+    document.getElementById('patientNom').textContent = p.nom_complet;
+    document.getElementById('patientDetail').textContent = p.telephone + ' • ' + p.numero_dossier + (p.age ? ' • ' + p.age + ' ans' : '');
+    patientInput.style.display = 'none';
+});
+
+function clearPatient() {
+    patientIdField.value = '';
+    patientInput.value = '';
+    patientInput.style.display = '';
+    document.getElementById('patientInfo').classList.add('d-none');
+}
+
+// Prise en charge
+document.getElementById('partenaireSelect').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    tauxAssurance = parseFloat(opt.dataset.taux || 0);
+    const pecInfo = document.getElementById('pecInfo');
+    if (tauxAssurance > 0) {
+        pecInfo.classList.remove('d-none');
+        document.getElementById('pecTaux').textContent = tauxAssurance;
+        document.getElementById('pecPatient').textContent = (100 - tauxAssurance).toFixed(0);
+    } else {
+        pecInfo.classList.add('d-none');
+    }
+    recalculer();
+});
+
+// Recalcul totaux
+function recalculer() {
+    const total = lignes.reduce((s, l) => s + (l.prix * l.quantite), 0);
+    document.getElementById('totalDisplay').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+    
+    const pecDetail = document.getElementById('pecDetail');
+    if (tauxAssurance > 0) {
+        pecDetail.classList.remove('d-none');
+        const partAss = total * tauxAssurance / 100;
+        const partPat = total - partAss;
+        document.getElementById('tauxAssDisplay').textContent = tauxAssurance;
+        document.getElementById('partAssDisplay').textContent = partAss.toLocaleString('fr-FR') + ' FCFA';
+        document.getElementById('partPatDisplay').textContent = partPat.toLocaleString('fr-FR') + ' FCFA';
+    } else {
+        pecDetail.classList.add('d-none');
+    }
+    calculerMonnaie();
+}
+
+function getPartPatient() {
+    const total = lignes.reduce((s, l) => s + (l.prix * l.quantite), 0);
+    return total * (1 - tauxAssurance / 100);
+}
+
+function calculerMonnaie() {
+    const recu = parseFloat(document.getElementById('montantRecu').value || 0);
+    const partPat = getPartPatient();
+    
+    if (recu > 0 && partPat > 0) {
+        const monnaie = recu - partPat;
+        if (monnaie >= 0) {
+            document.getElementById('monnaieInfo').classList.remove('d-none');
+            document.getElementById('insuffisantInfo').classList.add('d-none');
+            document.getElementById('monnaieRendue').textContent = monnaie.toLocaleString('fr-FR') + ' FCFA';
+        } else {
+            document.getElementById('monnaieInfo').classList.add('d-none');
+            document.getElementById('insuffisantInfo').classList.remove('d-none');
+            document.getElementById('manqueDisplay').textContent = Math.abs(monnaie).toLocaleString('fr-FR') + ' FCFA';
+        }
+    } else {
+        document.getElementById('monnaieInfo').classList.add('d-none');
+        document.getElementById('insuffisantInfo').classList.add('d-none');
+    }
+}
+
+// Rendu des lignes
+function renderLignes() {
+    const tbody = document.getElementById('lignesBody');
+    tbody.innerHTML = '';
+    lignes.forEach((l, i) => {
+        const montant = l.prix * l.quantite;
+        tbody.innerHTML += `
+        <tr class="ligne-row">
+            <td>
+                <div class="fw-semibold" style="font-size:13px;">${l.designation}</div>
+                ${l.type === 'produit' ? '<span class="badge bg-success-subtle text-success" style="font-size:10px;"><i class="fas fa-pills me-1"></i>Pharmacie</span>' : 
+                  '<span class="badge bg-primary-subtle text-primary" style="font-size:10px;"><i class="fas fa-stethoscope me-1"></i>Acte</span>'}
+            </td>
+            <td>
+                <input type="number" min="1" value="${l.quantite}" class="form-control form-control-sm" 
+                       style="width:65px;" onchange="updateQte(${i}, this.value)">
+            </td>
+            <td><span class="fw-semibold">${l.prix.toLocaleString('fr-FR')}</span></td>
+            <td><span class="fw-bold text-primary">${montant.toLocaleString('fr-FR')}</span></td>
+            <td>
+                ${l.type === 'produit' ? 
+                    `<span class="badge ${l.stock > 0 ? 'bg-success' : 'bg-danger'}">${l.stock > 0 ? 'Stock: ' + l.stock : 'RUPTURE'}</span>` : 
+                    '<span class="text-muted">—</span>'}
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeLigne(${i})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+    });
+    recalculer();
+    document.getElementById('lignesJson').value = JSON.stringify(lignes.map(l => ({
+        designation: l.designation,
+        quantite: l.quantite,
+        prix_unitaire: l.prix,
+        taux_remise: 0,
+        acte_id: l.acteId || null,
+        produit_id: l.produitId || null,
+    })));
+}
+
+function updateQte(idx, val) {
+    lignes[idx].quantite = parseInt(val) || 1;
+    renderLignes();
+}
+
+function removeLigne(idx) {
+    lignes.splice(idx, 1);
+    renderLignes();
+}
+
+// Ajouter acte rapide
+function ajouterActeRapide(id, libelle, prixNormal, prixPec) {
+    const prix = tauxAssurance > 0 ? prixPec : prixNormal;
+    lignes.push({ type: 'acte', acteId: id, designation: libelle, prix: prix, quantite: 1 });
+    renderLignes();
+}
+
+// Modal actes
+function showActeModal() {
+    document.getElementById('acteSearch').value = '';
+    filterActes('');
+    new bootstrap.Modal(document.getElementById('acteModal')).show();
+}
+
+document.getElementById('acteSearch').addEventListener('input', function() { filterActes(this.value); });
+
+function filterActes(q) {
+    document.querySelectorAll('.acte-item').forEach(el => {
+        el.style.display = el.dataset.libelle.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+    });
+}
+
+function ajouterActe(el) {
+    const prix = tauxAssurance > 0 ? parseFloat(el.dataset.prixPec) : parseFloat(el.dataset.prixNormal);
+    lignes.push({ type: 'acte', acteId: el.dataset.id, designation: el.dataset.libelle, prix: prix, quantite: 1 });
+    renderLignes();
+    bootstrap.Modal.getInstance(document.getElementById('acteModal')).hide();
+}
+
+// Modal produits
+let searchTimeout;
+function showProduitModal() {
+    document.getElementById('produitSearch').value = '';
+    document.getElementById('produitResults').innerHTML = '';
+    document.getElementById('produitSelected').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('produitModal')).show();
+}
+
+function searchProduit(q) {
+    clearTimeout(searchTimeout);
+    if (q.length < 2) { document.getElementById('produitResults').innerHTML = ''; return; }
+    searchTimeout = setTimeout(() => {
+        axios.get('/pharmacie/api/recherche?q=' + encodeURIComponent(q))
+            .then(res => {
+                const el = document.getElementById('produitResults');
+                el.innerHTML = '';
+                res.data.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'border rounded p-3 mb-2';
+                    div.style.cursor = 'pointer';
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">${p.nom}</div>
+                                ${p.dci ? '<div style="font-size:11px;color:#64748b;">DCI: ' + p.dci + '</div>' : ''}
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-primary">${p.prix.toLocaleString('fr-FR')} FCFA</div>
+                                <span class="badge ${p.disponible ? 'bg-success' : 'bg-danger'}" style="font-size:10px;">
+                                    ${p.disponible ? 'Stock: ' + p.stock : 'RUPTURE'}
+                                </span>
+                            </div>
+                        </div>`;
+                    div.addEventListener('mouseenter', () => div.style.background = '#f0f7ff');
+                    div.addEventListener('mouseleave', () => div.style.background = '');
+                    div.addEventListener('click', () => selectProduit(p));
+                    el.appendChild(div);
+                });
+            });
+    }, 300);
+}
+
+function selectProduit(p) {
+    selectedProduit = p;
+    document.getElementById('produitSelectedNom').textContent = p.nom;
+    document.getElementById('produitStock').textContent = p.stock;
+    document.getElementById('produitQte').max = p.stock;
+    document.getElementById('produitSelected').classList.remove('d-none');
+}
+
+function confirmerProduit() {
+    if (!selectedProduit) return;
+    const qte = parseInt(document.getElementById('produitQte').value) || 1;
+    if (!selectedProduit.disponible || selectedProduit.stock < qte) {
+        alert('Stock insuffisant! Stock disponible: ' + selectedProduit.stock);
+        return;
+    }
+    lignes.push({
+        type: 'produit',
+        produitId: selectedProduit.id,
+        designation: selectedProduit.nom,
+        prix: selectedProduit.prix,
+        quantite: qte,
+        stock: selectedProduit.stock
+    });
+    renderLignes();
+    bootstrap.Modal.getInstance(document.getElementById('produitModal')).hide();
+}
+
+// Validation finale
+function validerFacture() {
+    if (!patientIdField.value) {
+        alert('Veuillez sélectionner un patient!');
+        return;
+    }
+    if (lignes.length === 0) {
+        alert('Veuillez ajouter au moins une prestation!');
+        return;
+    }
+    
+    const montantRecu = parseFloat(document.getElementById('montantRecu').value || 0);
+    const partPat = getPartPatient();
+    
+    if (montantRecu <= 0) {
+        if (!confirm('Aucun montant saisi. Créer une facture en attente de paiement?')) return;
+    }
+    
+    document.getElementById('lignesJson').value = JSON.stringify(lignes.map(l => ({
+        designation: l.designation,
+        quantite: l.quantite,
+        prix_unitaire: l.prix,
+        taux_remise: 0,
+        acte_id: l.acteId || null,
+        produit_id: l.produitId || null,
+    })));
+
+    const formData = new FormData(document.getElementById('factureForm'));
+    document.getElementById('btnValider').disabled = true;
+    document.getElementById('btnValider').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Traitement...';
+
+    axios.post('', formData)
+        .then(res => {
+            if (res.data.success) {
+                window.location.href = res.data.redirect;
+            }
+        })
+        .catch(err => {
+            document.getElementById('btnValider').disabled = false;
+            document.getElementById('btnValider').innerHTML = '<i class="fas fa-check-circle me-2"></i>Valider & Imprimer';
+            alert('Erreur: ' + (err.response?.data?.error || 'Erreur inconnue'));
+        });
+}
+
+renderLignes();
+</script>
+{% endblock %}

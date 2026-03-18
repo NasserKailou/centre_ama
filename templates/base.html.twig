@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr" data-env="{{ app.environment }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CSI — Centre de Santé Intégré — Système de gestion médical">
+    <title>{% block title %}CSI{% endblock %} — {{ app_name }}</title>
+
+    {# ── Favicon ── #}
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231A73E8'/%3E%3Cpath d='M14 8h4v6h6v4h-6v6h-4v-6H8v-4h6z' fill='white'/%3E%3C/svg%3E">
+
+    {# ── Font Awesome ── #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css">
+
+    {# ── CSS principal CSI ── #}
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/components.css') }}">
+
+    {% block stylesheets %}{% endblock %}
+</head>
+<body data-env="{{ app.environment }}">
+
+{# ── Page Loader ── #}
+<div class="page-loader" id="page-loader">
+    <div class="loader-spinner"></div>
+</div>
+
+{% if app.user %}
+{# ============================================================
+   LAYOUT AUTHENTIFIÉ
+   ============================================================ #}
+
+{# Overlay sidebar (mobile) #}
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="app-layout">
+
+    {# ── SIDEBAR ── #}
+    <aside class="sidebar" id="sidebar">
+        {# Brand #}
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">
+                <i class="fas fa-plus-square"></i>
+            </div>
+            <div>
+                <div class="sidebar-brand-text">CSI</div>
+                <div class="sidebar-brand-sub">Centre de Santé</div>
+            </div>
+        </div>
+
+        {# Navigation #}
+        <nav class="sidebar-nav">
+
+            {# ── PRINCIPAL ── #}
+            <div class="sidebar-section">Principal</div>
+
+            <a href="{{ path('app_dashboard') }}" class="sidebar-link">
+                <i class="fas fa-th-large nav-icon"></i>
+                Tableau de bord
+            </a>
+
+            {# ── PATIENTS ── #}
+            <div class="sidebar-section">Patients</div>
+
+            <a href="{{ path('app_patient_index') }}" class="sidebar-link">
+                <i class="fas fa-users nav-icon"></i>
+                Patients
+            </a>
+
+            <a href="{{ path('app_rdv_index') }}" class="sidebar-link">
+                <i class="fas fa-calendar-alt nav-icon"></i>
+                Rendez-vous
+            </a>
+
+            {# ── MÉDICAL ── #}
+            <div class="sidebar-section">Médical</div>
+
+            {% if is_granted('ROLE_MEDECIN') %}
+            <a href="{{ path('app_medecin_index') }}" class="sidebar-link">
+                <i class="fas fa-user-md nav-icon"></i>
+                Mon espace
+            </a>
+            {% endif %}
+
+            <a href="{{ path('app_consultation_index') }}" class="sidebar-link">
+                <i class="fas fa-stethoscope nav-icon"></i>
+                Consultations
+            </a>
+
+            {# ── GESTION ── #}
+            <div class="sidebar-section">Gestion</div>
+
+            {% if is_granted('ROLE_CAISSIER') or is_granted('ROLE_ADMIN') %}
+            <a href="{{ path('app_caisse_index') }}" class="sidebar-link">
+                <i class="fas fa-cash-register nav-icon"></i>
+                Caisse & Facturation
+            </a>
+            {% endif %}
+
+            <a href="{{ path('app_pharmacie_index') }}" class="sidebar-link">
+                <i class="fas fa-pills nav-icon"></i>
+                Pharmacie
+            </a>
+
+            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_ASSISTANT') %}
+            <a href="{{ path('app_partenaire_index') }}" class="sidebar-link">
+                <i class="fas fa-handshake nav-icon"></i>
+                Partenaires
+            </a>
+            {% endif %}
+
+            {# ── RAPPORTS ── #}
+            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_CAISSIER') %}
+            <div class="sidebar-section">Rapports</div>
+
+            <a href="{{ path('app_rapport_index') }}" class="sidebar-link">
+                <i class="fas fa-chart-bar nav-icon"></i>
+                Rapports & Stats
+            </a>
+            {% endif %}
+
+            {# ── ADMIN ── #}
+            {% if is_granted('ROLE_ADMIN') %}
+            <div class="sidebar-section">Administration</div>
+
+            <a href="{{ path('app_admin_index') }}" class="sidebar-link">
+                <i class="fas fa-cogs nav-icon"></i>
+                Administration
+            </a>
+            {% endif %}
+
+        </nav>
+
+        {# Footer utilisateur #}
+        <div class="sidebar-footer">
+            <div class="sidebar-user" onclick="window.location.href='{{ path('app_medecin_profile') }}'">
+                <div class="sidebar-user-avatar">
+                    {{ app.user.prenom[0] is defined ? app.user.prenom[0] : 'U' }}{{ app.user.nom[0] is defined ? app.user.nom[0] : '' }}
+                </div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name">{{ app.user.prenom }} {{ app.user.nom }}</div>
+                    <div class="sidebar-user-role">
+                        {% if 'ROLE_ADMIN' in app.user.roles %}Administrateur
+                        {% elseif 'ROLE_MEDECIN' in app.user.roles %}Médecin
+                        {% elseif 'ROLE_CAISSIER' in app.user.roles %}Caissier
+                        {% elseif 'ROLE_ASSISTANT' in app.user.roles %}Assistant
+                        {% else %}Utilisateur{% endif %}
+                    </div>
+                </div>
+            </div>
+            <a href="{{ path('app_logout') }}"
+               style="display:flex;align-items:center;gap:.6rem;padding:.5rem .6rem;color:rgba(255,255,255,.5);font-size:.8rem;border-radius:8px;transition:all .2s;margin-top:.4rem"
+               onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,.08)'"
+               onmouseout="this.style.color='rgba(255,255,255,.5)';this.style.background='transparent'">
+                <i class="fas fa-sign-out-alt" style="width:16px;text-align:center"></i>
+                Déconnexion
+            </a>
+        </div>
+    </aside>
+
+    {# ── MAIN WRAPPER ── #}
+    <div class="main-wrapper">
+
+        {# ── TOPBAR ── #}
+        <header class="topbar">
+            <button class="topbar-toggle" id="sidebar-toggle" aria-label="Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="topbar-breadcrumb">
+                <strong>{% block page_title %}{% endblock %}</strong>
+            </div>
+
+            <div class="topbar-actions">
+                {# Date/heure #}
+                <span class="topbar-date" id="topbar-datetime">
+                    {{ "now"|date('D d M Y | H:i', timezone=app_timezone|default('Africa/Niamey')) }}
+                </span>
+
+                {# Bouton nouvau patient rapide #}
+                <a href="{{ path('app_patient_new') }}"
+                   class="topbar-btn" title="Nouveau patient" style="color:var(--csi-primary)">
+                    <i class="fas fa-user-plus"></i>
+                </a>
+
+                {# Notifications #}
+                <button class="topbar-btn" id="btn-notif" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="topbar-notif-dot" style="display:none"></span>
+                </button>
+
+                {# Aide #}
+                <button class="topbar-btn" title="Aide" onclick="alert('Documentation CSI v{{ app_version }}\nContact : admin@csi.ne')">
+                    <i class="fas fa-question-circle"></i>
+                </button>
+            </div>
+        </header>
+
+        {# ── FLASH MESSAGES ── #}
+        {% for type, messages in app.flashes() %}
+            {% for message in messages %}
+            <div style="position:fixed;top:70px;right:1.5rem;z-index:9999;max-width:380px">
+                <div class="alert alert-{{ type }}" style="cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.12)"
+                     onclick="this.parentElement.remove()">
+                    <i class="fas fa-{{ type == 'success' ? 'check-circle' : (type == 'danger' ? 'times-circle' : (type == 'warning' ? 'exclamation-triangle' : 'info-circle')) }}"></i>
+                    <span>{{ message }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        {% endfor %}
+
+        {# ── PAGE CONTENT ── #}
+        <main class="page-content fade-in">
+            {% block content %}{% endblock %}
+        </main>
+
+    </div>{# /main-wrapper #}
+
+</div>{# /app-layout #}
+
+{% else %}
+{# ============================================================
+   LAYOUT NON AUTHENTIFIÉ (Login, etc.)
+   ============================================================ #}
+{% block content %}{% endblock %}
+{% endif %}
+
+{# ── Scripts ── #}
+<script src="{{ asset('js/app.js') }}"></script>
+{% block javascripts %}{% endblock %}
+
+</body>
+</html>

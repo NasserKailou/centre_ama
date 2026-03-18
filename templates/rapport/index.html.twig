@@ -1,0 +1,362 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rapports & Statistiques — CSI{% endblock %}
+{% block page_title %}<i class="fas fa-chart-line"></i> Rapports & Statistiques{% endblock %}
+
+{% block stylesheets %}
+<style>
+.chart-container { position:relative; height:280px; }
+.stat-change { font-size:.75rem; display:flex; align-items:center; gap:.25rem; margin-top:.2rem; }
+.stat-change.up   { color: var(--csi-success); }
+.stat-change.down { color: var(--csi-danger); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title-h1">Rapports & Statistiques</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+            <span>/</span>
+            <span>Rapports</span>
+        </nav>
+    </div>
+    <div class="page-actions">
+        <a href="{{ path('app_rapport_export') }}?periode={{ periode }}&date_debut={{ dateDebut }}&date_fin={{ dateFin }}&format=excel"
+           class="btn btn-success">
+            <i class="fas fa-file-excel"></i> Excel
+        </a>
+        <a href="{{ path('app_rapport_export') }}?periode={{ periode }}&date_debut={{ dateDebut }}&date_fin={{ dateFin }}&format=pdf"
+           class="btn btn-danger">
+            <i class="fas fa-file-pdf"></i> PDF
+        </a>
+    </div>
+</div>
+
+{# ── Filtres période ── #}
+<div class="card" style="margin-bottom:1.25rem">
+    <div class="card-body" style="padding:.85rem 1.25rem">
+        <form method="get" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+            <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:.8rem">Période</label>
+                <div style="display:flex;gap:.3rem">
+                    {% for p, label in {'jour':'Aujourd\'hui','semaine':'Semaine','mois':'Ce mois','trimestre':'Trimestre','annee':'Année','custom':'Personnalisée'} %}
+                    <a href="?periode={{ p }}"
+                       class="btn btn-sm {{ periode == p ? 'btn-primary' : 'btn-secondary' }}">{{ label }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% if periode == 'custom' %}
+            <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:.8rem">Du</label>
+                <input type="date" name="date_debut" value="{{ dateDebut }}" class="form-control" style="font-size:.85rem">
+            </div>
+            <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:.8rem">Au</label>
+                <input type="date" name="date_fin" value="{{ dateFin }}" class="form-control" style="font-size:.85rem">
+            </div>
+            {% endif %}
+            <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:.8rem">Médecin</label>
+                <select name="medecin_id" class="form-control" style="font-size:.85rem">
+                    <option value="">Tous les médecins</option>
+                    {% for m in medecins %}
+                    <option value="{{ m.id }}" {{ medecinId == m.id ? 'selected' }}>Dr {{ m.prenom }} {{ m.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if periode == 'custom' %}
+            <button type="submit" class="btn btn-primary btn-sm" style="align-self:flex-end">
+                <i class="fas fa-filter"></i> Appliquer
+            </button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{# ── KPIs ── #}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:1.5rem">
+
+    <div class="card kpi-card">
+        <div class="kpi-icon" style="background:rgba(26,115,232,.12);color:var(--csi-primary)">
+            <i class="fas fa-stethoscope"></i>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-value">{{ stats.totalConsultations ?? 0 }}</div>
+            <div class="kpi-label">Consultations</div>
+        </div>
+    </div>
+
+    <div class="card kpi-card">
+        <div class="kpi-icon" style="background:rgba(0,197,137,.12);color:var(--csi-success)">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-value">{{ stats.totalPatients ?? 0 }}</div>
+            <div class="kpi-label">Patients vus</div>
+        </div>
+    </div>
+
+    <div class="card kpi-card">
+        <div class="kpi-icon" style="background:rgba(255,160,0,.12);color:var(--csi-warning)">
+            <i class="fas fa-file-invoice-dollar"></i>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-value">{{ stats.totalFactures ?? 0 }}</div>
+            <div class="kpi-label">Factures émises</div>
+        </div>
+    </div>
+
+    <div class="card kpi-card">
+        <div class="kpi-icon" style="background:rgba(233,30,99,.12);color:var(--csi-danger)">
+            <i class="fas fa-coins"></i>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-value" style="font-size:1.1rem">{{ (stats.chiffreAffaires ?? 0)|number_format(0, ',', ' ') }}</div>
+            <div class="kpi-label">CA ({{ currency }})</div>
+        </div>
+    </div>
+
+    <div class="card kpi-card">
+        <div class="kpi-icon" style="background:rgba(103,58,183,.12);color:#7C3AED">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-value" style="font-size:1.1rem">{{ (stats.partAssurance ?? 0)|number_format(0, ',', ' ') }}</div>
+            <div class="kpi-label">Part assurance ({{ currency }})</div>
+        </div>
+    </div>
+
+    <div class="card kpi-card">
+        <div class="kpi-icon" style="background:rgba(0,150,136,.12);color:#00796B">
+            <i class="fas fa-hand-holding-usd"></i>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-value" style="font-size:1.1rem">{{ (stats.partPatient ?? 0)|number_format(0, ',', ' ') }}</div>
+            <div class="kpi-label">Part patient ({{ currency }})</div>
+        </div>
+    </div>
+
+</div>
+
+{# ── Graphiques ── #}
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+
+    {# Évolution consultations #}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-chart-line"></i> Évolution des consultations</h3>
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="chartConsultations"></canvas>
+            </div>
+        </div>
+    </div>
+
+    {# Répartition actes #}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-chart-pie"></i> Répartition recettes</h3>
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="chartRepartition"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{# ── Tableau par médecin ── #}
+{% if stats.parMedecin is defined and stats.parMedecin|length > 0 %}
+<div class="card" style="margin-bottom:1.25rem">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-user-md"></i> Activité par médecin</h3>
+    </div>
+    <div class="card-body" style="padding:0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Médecin</th>
+                    <th>Spécialité</th>
+                    <th>Consultations</th>
+                    <th>Patients</th>
+                    <th>CA ({{ currency }})</th>
+                    <th>Moy/consult</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in stats.parMedecin %}
+                <tr>
+                    <td><strong>Dr {{ row.prenom }} {{ row.nom }}</strong></td>
+                    <td style="color:#607D8B;font-size:.85rem">{{ row.specialite ?? 'Généraliste' }}</td>
+                    <td><span class="badge badge-info">{{ row.consultations }}</span></td>
+                    <td>{{ row.patients ?? '—' }}</td>
+                    <td style="font-weight:600">{{ (row.chiffreAffaires ?? 0)|number_format(0, ',', ' ') }}</td>
+                    <td style="color:#607D8B;font-size:.85rem">
+                        {{ row.consultations > 0 ? ((row.chiffreAffaires ?? 0) / row.consultations)|number_format(0, ',', ' ') : '—' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{# ── Top actes & Partenaires ── #}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+    {# Top actes médicaux #}
+    {% if stats.topActes is defined %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-procedures"></i> Top actes médicaux</h3>
+        </div>
+        <div class="card-body" style="padding:0">
+            <table class="table">
+                <thead>
+                    <tr><th>Acte</th><th>Qté</th><th>Total ({{ currency }})</th></tr>
+                </thead>
+                <tbody>
+                    {% for acte in stats.topActes %}
+                    <tr>
+                        <td style="font-size:.85rem">{{ acte.designation }}</td>
+                        <td><span class="badge badge-secondary">{{ acte.quantite }}</span></td>
+                        <td style="font-weight:600;font-size:.88rem">{{ acte.total|number_format(0, ',', ' ') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" style="text-align:center;color:#90A4AE;padding:1.5rem">Aucune donnée</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Partenaires / Assurances #}
+    {% if stats.parPartenaire is defined %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-handshake"></i> Recettes par partenaire</h3>
+        </div>
+        <div class="card-body" style="padding:0">
+            <table class="table">
+                <thead>
+                    <tr><th>Partenaire</th><th>Factures</th><th>Part assurance ({{ currency }})</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in stats.parPartenaire %}
+                    <tr>
+                        <td style="font-size:.85rem;font-weight:500">{{ row.nom }}</td>
+                        <td><span class="badge badge-info">{{ row.factures }}</span></td>
+                        <td style="font-weight:600;font-size:.88rem">{{ row.montant|number_format(0, ',', ' ') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" style="text-align:center;color:#90A4AE;padding:1.5rem">Aucune donnée</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.color = '#607D8B';
+
+// ── Graphique consultations ──
+const ctxC = document.getElementById('chartConsultations')?.getContext('2d');
+if (ctxC) {
+    const labels = {{ chartData.labels|json_encode|raw }};
+    const data   = {{ chartData.consultations|json_encode|raw }};
+    const ca     = {{ chartData.chiffreAffaires|json_encode|raw }};
+
+    new Chart(ctxC, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Consultations',
+                    data,
+                    backgroundColor: 'rgba(26,115,232,.18)',
+                    borderColor: 'var(--csi-primary)',
+                    borderWidth: 2,
+                    borderRadius: 4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'CA ({{ currency }})',
+                    data: ca,
+                    type: 'line',
+                    borderColor: 'var(--csi-success)',
+                    backgroundColor: 'rgba(0,197,137,.08)',
+                    borderWidth: 2,
+                    tension: .4,
+                    fill: true,
+                    pointRadius: 4,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'top', labels: { boxWidth: 12 } } },
+            scales: {
+                y:  { position: 'left',  title: { display: true, text: 'Consultations' }, beginAtZero: true },
+                y1: { position: 'right', title: { display: true, text: '{{ currency }}' }, beginAtZero: true, grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+}
+
+// ── Graphique répartition ──
+const ctxR = document.getElementById('chartRepartition')?.getContext('2d');
+if (ctxR) {
+    new Chart(ctxR, {
+        type: 'doughnut',
+        data: {
+            labels: ['Actes médicaux', 'Pharmacie', 'Part assurance'],
+            datasets: [{
+                data: [
+                    {{ stats.montantActes ?? 0 }},
+                    {{ stats.montantPharmacie ?? 0 }},
+                    {{ stats.partAssurance ?? 0 }}
+                ],
+                backgroundColor: [
+                    'rgba(26,115,232,.8)',
+                    'rgba(0,197,137,.8)',
+                    'rgba(103,58,183,.8)'
+                ],
+                borderWidth: 0,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16 } },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.label + ' : ' + ctx.parsed.toLocaleString('fr-FR') + ' {{ currency }}'
+                    }
+                }
+            },
+            cutout: '65%'
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,246 @@
+{% extends 'base.html.twig' %}
+{% block title %}Partenaires - CSI{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-bar">
+    <div>
+        <h1 class="page-heading"><i class="fas fa-handshake"></i> Partenaires & Assurances</h1>
+        <nav><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}">Accueil</a></li>
+            <li class="breadcrumb-item active">Partenaires</li>
+        </ol></nav>
+    </div>
+    {% if is_granted('ROLE_ADMIN') %}
+    <button class="btn btn-primary" onclick="CSI.openModal('modal-new-partenaire')">
+        <i class="fas fa-plus"></i> Nouveau partenaire
+    </button>
+    {% endif %}
+</div>
+
+{# Stats rapides #}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem">
+    <div class="stat-card stat-blue">
+        <div class="stat-icon"><i class="fas fa-building"></i></div>
+        <div class="stat-body">
+            <div class="stat-value">{{ partenaires|length }}</div>
+            <div class="stat-label">Partenaires actifs</div>
+        </div>
+    </div>
+    <div class="stat-card stat-green">
+        <div class="stat-icon"><i class="fas fa-money-check-alt"></i></div>
+        <div class="stat-body">
+            <div class="stat-value">{{ stats.totalCreances|number_format(0,',',' ') }}</div>
+            <div class="stat-label">Créances ({{ currency }})</div>
+        </div>
+    </div>
+    <div class="stat-card stat-orange">
+        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-body">
+            <div class="stat-value">{{ stats.facturesEnAttente }}</div>
+            <div class="stat-label">Factures en attente</div>
+        </div>
+    </div>
+    <div class="stat-card stat-cyan">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-body">
+            <div class="stat-value">{{ stats.patientsAssures }}</div>
+            <div class="stat-label">Patients assurés</div>
+        </div>
+    </div>
+</div>
+
+{# Liste partenaires #}
+<div class="card mb-4">
+    <div class="card-header">
+        <h6><i class="fas fa-list"></i> Liste des partenaires</h6>
+        <div class="d-flex gap-2 align-items-center">
+            <input type="text" id="search-partenaire" class="form-control" placeholder="Rechercher..." style="width:200px">
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table" id="table-partenaires">
+            <thead><tr>
+                <th>Nom</th>
+                <th>Type</th>
+                <th>Contact</th>
+                <th class="text-right">Taux prise en charge</th>
+                <th class="text-right">Créances ({{ currency }})</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr></thead>
+            <tbody>
+            {% for p in partenaires %}
+            <tr data-search="{{ p.nom|lower }}">
+                <td>
+                    <div style="font-weight:700;font-size:.95rem">{{ p.nom }}</div>
+                    {% if p.description %}
+                    <div style="font-size:.75rem;color:#78909C">{{ p.description }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge-status {{ p.type == 'assurance' ? 'badge-primary' : (p.type == 'mutuelle' ? 'badge-purple' : 'badge-info') }}">
+                        {{ p.type|capitalize }}
+                    </span>
+                </td>
+                <td>
+                    {% if p.telephone %}<div><i class="fas fa-phone fa-xs" style="color:#78909C"></i> {{ p.telephone }}</div>{% endif %}
+                    {% if p.email %}<div><i class="fas fa-envelope fa-xs" style="color:#78909C"></i> {{ p.email }}</div>{% endif %}
+                    {% if p.contact %}<div style="font-size:.78rem;color:#78909C">Ref: {{ p.contact }}</div>{% endif %}
+                </td>
+                <td style="text-align:right;font-weight:700;font-size:1.1rem;color:var(--csi-success)">
+                    {{ p.tauxPriseEnCharge ?? 0 }}%
+                </td>
+                <td style="text-align:right">
+                    <strong style="color:{{ p.creances > 0 ? 'var(--csi-danger)' : 'var(--csi-success)' }}">
+                        {{ p.creances|default(0)|number_format(0,',',' ') }}
+                    </strong>
+                </td>
+                <td>
+                    {% if p.actif %}
+                    <span class="badge-status badge-success">Actif</span>
+                    {% else %}
+                    <span class="badge-status badge-danger">Inactif</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <a href="{{ path('app_partenaire_show', {id: p.id}) }}" class="btn btn-info btn-icon btn-sm" title="Voir détails">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{{ path('app_partenaire_releve', {id: p.id}) }}" class="btn btn-primary btn-icon btn-sm" title="Relevé de compte">
+                            <i class="fas fa-file-invoice"></i>
+                        </a>
+                        {% if is_granted('ROLE_ADMIN') %}
+                        <a href="{{ path('app_partenaire_edit', {id: p.id}) }}" class="btn btn-warning btn-icon btn-sm" title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align:center;padding:2rem;color:#90A4AE">
+                <i class="fas fa-handshake fa-2x" style="display:block;margin-bottom:.5rem"></i>
+                Aucun partenaire enregistré
+            </td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Relevé périodique #}
+<div class="card">
+    <div class="card-header">
+        <h6><i class="fas fa-file-invoice-dollar"></i> Générer un relevé périodique</h6>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ path('app_partenaire_releve_global') }}" class="d-flex gap-3 align-items-end flex-wrap">
+            <div>
+                <label class="form-label">Partenaire</label>
+                <select name="partenaire_id" class="form-select">
+                    <option value="">Tous les partenaires</option>
+                    {% for p in partenaires %}
+                    <option value="{{ p.id }}">{{ p.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Du</label>
+                <input type="date" name="date_debut" class="form-control" value="{{ "now"|date_modify("-1 month")|date('Y-m-d') }}">
+            </div>
+            <div>
+                <label class="form-label">Au</label>
+                <input type="date" name="date_fin" class="form-control" value="{{ "now"|date('Y-m-d') }}">
+            </div>
+            <div>
+                <label class="form-label">Format</label>
+                <select name="format" class="form-select">
+                    <option value="html">Aperçu HTML</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-file-export"></i> Générer le relevé
+            </button>
+        </form>
+    </div>
+</div>
+
+{# Modal nouveau partenaire #}
+<div id="modal-new-partenaire" class="modal-overlay">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-handshake" style="color:var(--csi-primary)"></i> Nouveau partenaire</h5>
+            <button class="modal-close" onclick="CSI.closeModal('modal-new-partenaire')">&times;</button>
+        </div>
+        <form method="POST" action="{{ path('app_partenaire_new') }}">
+            <div class="modal-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                    <div style="grid-column:1/-1">
+                        <label class="form-label">Nom du partenaire *</label>
+                        <input type="text" name="nom" class="form-control" required placeholder="Nom de la compagnie / mutuelle...">
+                    </div>
+                    <div>
+                        <label class="form-label">Type *</label>
+                        <select name="type" class="form-select" required>
+                            <option value="assurance">Assurance</option>
+                            <option value="mutuelle">Mutuelle</option>
+                            <option value="etat">État / Ministère</option>
+                            <option value="entreprise">Entreprise</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Taux de prise en charge (%)</label>
+                        <input type="number" name="taux_prise_en_charge" class="form-control" value="80" min="0" max="100">
+                    </div>
+                    <div>
+                        <label class="form-label">Téléphone</label>
+                        <input type="tel" name="telephone" class="form-control" placeholder="+227 XX XX XX XX">
+                    </div>
+                    <div>
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="contact@partenaire.com">
+                    </div>
+                    <div>
+                        <label class="form-label">Personne de contact</label>
+                        <input type="text" name="contact" class="form-control" placeholder="Nom du contact principal">
+                    </div>
+                    <div>
+                        <label class="form-label">Numéro de contrat</label>
+                        <input type="text" name="numero_contrat" class="form-control" placeholder="N° de contrat / convention">
+                    </div>
+                    <div style="grid-column:1/-1">
+                        <label class="form-label">Adresse</label>
+                        <textarea name="adresse" class="form-control" rows="2" placeholder="Adresse complète..."></textarea>
+                    </div>
+                    <div style="grid-column:1/-1">
+                        <label class="form-label">Description / Notes</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Conditions particulières, notes..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" onclick="CSI.closeModal('modal-new-partenaire')">Annuler</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+// Recherche en temps réel
+document.getElementById('search-partenaire')?.addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#table-partenaires tbody tr').forEach(row => {
+        row.style.display = (row.dataset.search || '').includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

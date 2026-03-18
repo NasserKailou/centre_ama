@@ -1,0 +1,266 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Consultation — {{ consultation.patient.prenom }} {{ consultation.patient.nom }}{% endblock %}
+{% block page_title %}<i class="fas fa-stethoscope"></i> Détail consultation{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title-h1">Consultation du {{ consultation.dateHeure|date('d/m/Y à H:i') }}</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+            <span>/</span>
+            <a href="{{ path('app_consultation_index') }}">Consultations</a>
+            <span>/</span>
+            <span>{{ consultation.patient.nom }}</span>
+        </nav>
+    </div>
+    <div class="page-actions">
+        {% if is_granted('ROLE_MEDECIN') or is_granted('ROLE_ADMIN') %}
+        <a href="{{ path('app_consultation_edit', {id: consultation.id}) }}" class="btn btn-primary">
+            <i class="fas fa-edit"></i> Modifier
+        </a>
+        {% endif %}
+        <a href="{{ path('app_consultation_index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem">
+
+    {# ── COLONNE PRINCIPALE ── #}
+    <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+        {# Informations générales #}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-info-circle"></i> Informations générales</h3>
+                <span class="badge badge-{{ consultation.statut == 'terminee' ? 'success' : (consultation.statut == 'en_cours' ? 'warning' : 'info') }}">
+                    {{ consultation.statut|replace({'_': ' '})|capitalize }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                    <div>
+                        <label class="form-label" style="font-size:.75rem;color:#90A4AE">Patient</label>
+                        <p style="font-weight:600;margin:0">
+                            <a href="{{ path('app_patient_show', {id: consultation.patient.id}) }}" style="color:var(--csi-primary)">
+                                {{ consultation.patient.prenom }} {{ consultation.patient.nom }}
+                            </a>
+                        </p>
+                        <p style="font-size:.8rem;color:#607D8B;margin:0">Dossier N° {{ consultation.patient.numeroDossier }}</p>
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size:.75rem;color:#90A4AE">Médecin</label>
+                        <p style="font-weight:600;margin:0">Dr {{ consultation.medecin.prenom }} {{ consultation.medecin.nom }}</p>
+                        <p style="font-size:.8rem;color:#607D8B;margin:0">{{ consultation.medecin.specialite ?? 'Généraliste' }}</p>
+                    </div>
+                    <div style="grid-column:1/-1">
+                        <label class="form-label" style="font-size:.75rem;color:#90A4AE">Motif de consultation</label>
+                        <p style="margin:0;font-weight:500">{{ consultation.motif }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Paramètres vitaux #}
+        {% if consultation.tension or consultation.temperature or consultation.poids or consultation.taille or consultation.frequenceCardiaque %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-heartbeat"></i> Paramètres vitaux</h3>
+            </div>
+            <div class="card-body">
+                <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
+                    {% if consultation.tension %}
+                    <div class="kpi-mini">
+                        <i class="fas fa-tachometer-alt" style="color:var(--csi-danger)"></i>
+                        <span class="kpi-value">{{ consultation.tension }}</span>
+                        <span class="kpi-label">TA (mmHg)</span>
+                    </div>
+                    {% endif %}
+                    {% if consultation.temperature %}
+                    <div class="kpi-mini">
+                        <i class="fas fa-thermometer-half" style="color:var(--csi-warning)"></i>
+                        <span class="kpi-value">{{ consultation.temperature }}°C</span>
+                        <span class="kpi-label">Température</span>
+                    </div>
+                    {% endif %}
+                    {% if consultation.frequenceCardiaque %}
+                    <div class="kpi-mini">
+                        <i class="fas fa-heart" style="color:var(--csi-danger)"></i>
+                        <span class="kpi-value">{{ consultation.frequenceCardiaque }} bpm</span>
+                        <span class="kpi-label">FC</span>
+                    </div>
+                    {% endif %}
+                    {% if consultation.poids %}
+                    <div class="kpi-mini">
+                        <i class="fas fa-weight" style="color:var(--csi-info)"></i>
+                        <span class="kpi-value">{{ consultation.poids }} kg</span>
+                        <span class="kpi-label">Poids</span>
+                    </div>
+                    {% endif %}
+                    {% if consultation.taille %}
+                    <div class="kpi-mini">
+                        <i class="fas fa-ruler-vertical" style="color:var(--csi-info)"></i>
+                        <span class="kpi-value">{{ consultation.taille }} cm</span>
+                        <span class="kpi-label">Taille</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Anamnèse & Examen clinique #}
+        {% if consultation.anamnese or consultation.examenClinique %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-clipboard"></i> Anamnèse & Examen clinique</h3>
+            </div>
+            <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                {% if consultation.anamnese %}
+                <div>
+                    <label class="form-label" style="font-size:.75rem;color:#90A4AE">Anamnèse</label>
+                    <p style="white-space:pre-wrap;margin:0;font-size:.9rem">{{ consultation.anamnese }}</p>
+                </div>
+                {% endif %}
+                {% if consultation.examenClinique %}
+                <div>
+                    <label class="form-label" style="font-size:.75rem;color:#90A4AE">Examen clinique</label>
+                    <p style="white-space:pre-wrap;margin:0;font-size:.9rem">{{ consultation.examenClinique }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Diagnostic & Traitement #}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-diagnoses"></i> Diagnostic & Traitement</h3>
+            </div>
+            <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                <div>
+                    <label class="form-label" style="font-size:.75rem;color:#90A4AE">Diagnostic</label>
+                    <p style="white-space:pre-wrap;margin:0;font-size:.9rem;font-weight:500">{{ consultation.diagnostic ?? '—' }}</p>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size:.75rem;color:#90A4AE">Traitement prescrit</label>
+                    <p style="white-space:pre-wrap;margin:0;font-size:.9rem">{{ consultation.traitement ?? '—' }}</p>
+                </div>
+                {% if consultation.observations %}
+                <div style="grid-column:1/-1">
+                    <label class="form-label" style="font-size:.75rem;color:#90A4AE">Observations</label>
+                    <p style="white-space:pre-wrap;margin:0;font-size:.9rem">{{ consultation.observations }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Examens prescrits #}
+        {% if consultation.prescriptionExamens is defined and consultation.prescriptionExamens|length > 0 %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-vials"></i> Examens prescrits</h3>
+                <span class="badge badge-info">{{ consultation.prescriptionExamens|length }}</span>
+            </div>
+            <div class="card-body" style="padding:0">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Examen</th>
+                            <th>Instructions</th>
+                            <th>Statut</th>
+                            <th>Résultat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exam in consultation.prescriptionExamens %}
+                        <tr>
+                            <td><strong>{{ exam.typeExamen }}</strong></td>
+                            <td>{{ exam.instructions ?? '—' }}</td>
+                            <td>
+                                <span class="badge badge-{{ exam.statut == 'resultat_recu' ? 'success' : (exam.statut == 'en_cours' ? 'warning' : 'secondary') }}">
+                                    {{ exam.statut|replace({'_': ' '}) }}
+                                </span>
+                            </td>
+                            <td>{{ exam.resultat ?? '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    {# ── COLONNE LATÉRALE ── #}
+    <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+        {# Infos patient #}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-user"></i> Patient</h3>
+            </div>
+            <div class="card-body">
+                <div style="text-align:center;margin-bottom:1rem">
+                    <div style="width:64px;height:64px;border-radius:50%;background:var(--csi-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;margin:0 auto .75rem">
+                        {{ consultation.patient.prenom[0] }}{{ consultation.patient.nom[0] }}
+                    </div>
+                    <p style="font-weight:700;margin:0">{{ consultation.patient.prenom }} {{ consultation.patient.nom }}</p>
+                    <p style="font-size:.8rem;color:#607D8B;margin:.2rem 0">
+                        {% if consultation.patient.dateNaissance %}
+                            {{ consultation.patient.dateNaissance|date('d/m/Y') }}
+                            ({{ ((now|date('U') - consultation.patient.dateNaissance|date('U')) / (365.25*86400))|round(0,'floor') }} ans)
+                        {% endif %}
+                    </p>
+                    {% if consultation.patient.allergies %}
+                    <div style="margin-top:.5rem;padding:.4rem .6rem;background:#FFF3E0;border-radius:6px;font-size:.78rem;color:#E65100">
+                        <i class="fas fa-exclamation-triangle"></i> {{ consultation.patient.allergies }}
+                    </div>
+                    {% endif %}
+                </div>
+                <a href="{{ path('app_patient_show', {id: consultation.patient.id}) }}" class="btn btn-secondary" style="width:100%;font-size:.82rem">
+                    <i class="fas fa-folder-open"></i> Voir le dossier complet
+                </a>
+            </div>
+        </div>
+
+        {# Actions rapides #}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-bolt"></i> Actions</h3>
+            </div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:.5rem">
+                {% if consultation.statut != 'terminee' and (is_granted('ROLE_MEDECIN') or is_granted('ROLE_ADMIN')) %}
+                <a href="{{ path('app_consultation_edit', {id: consultation.id}) }}" class="btn btn-primary" style="width:100%">
+                    <i class="fas fa-edit"></i> Continuer la consultation
+                </a>
+                {% endif %}
+                <a href="{{ path('app_caisse_new') }}?consultation_id={{ consultation.id }}" class="btn btn-success" style="width:100%">
+                    <i class="fas fa-file-invoice-dollar"></i> Créer une facture
+                </a>
+                <a href="{{ path('app_rdv_new') }}?patient_id={{ consultation.patient.id }}" class="btn btn-info" style="width:100%;color:#fff">
+                    <i class="fas fa-calendar-plus"></i> Nouveau RDV
+                </a>
+            </div>
+        </div>
+
+        {# Métadonnées #}
+        <div class="card">
+            <div class="card-body" style="font-size:.82rem;color:#607D8B">
+                <p style="margin:.2rem 0"><i class="fas fa-clock" style="width:16px"></i> Créée le {{ consultation.createdAt|date('d/m/Y à H:i') }}</p>
+                <p style="margin:.2rem 0"><i class="fas fa-user-md" style="width:16px"></i> Dr {{ consultation.medecin.prenom }} {{ consultation.medecin.nom }}</p>
+                {% if consultation.rendezVous %}
+                <p style="margin:.2rem 0"><i class="fas fa-calendar" style="width:16px"></i> 
+                    <a href="{{ path('app_rdv_show', {id: consultation.rendezVous.id}) }}" style="color:var(--csi-primary)">Voir le RDV associé</a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

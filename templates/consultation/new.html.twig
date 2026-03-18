@@ -1,0 +1,110 @@
+{% extends 'base.html.twig' %}
+{% block title %}Nouvelle Consultation{% endblock %}
+{% block page_title %}<i class="fas fa-stethoscope me-2 text-primary"></i>Nouvelle Consultation{% endblock %}
+{% block content %}
+<form method="post">
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="card-header-title"><i class="fas fa-user me-2 text-primary"></i>Patient</h5></div>
+            <div class="card-body">
+                {% if patient %}
+                <div class="alert alert-primary py-2 d-flex align-items-center gap-2">
+                    <i class="fas fa-user-circle fa-lg"></i>
+                    <div><strong>{{ patient.nomComplet }}</strong> — {{ patient.numeroDossier }} — Tél: {{ patient.telephone }}</div>
+                </div>
+                <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                {% else %}
+                <div class="position-relative">
+                    <input type="text" id="patientSearch" class="form-control" placeholder="Recherche patient (3 chiffres téléphone ou nom)…" autocomplete="off">
+                    <div id="patientDropdown" class="patient-search-dropdown" style="display:none;"></div>
+                </div>
+                <input type="hidden" name="patient_id" id="patientId">
+                {% endif %}
+                {% if rdv %}
+                <input type="hidden" name="rdv_id" value="{{ rdv.id }}">
+                <div class="mt-2 text-muted" style="font-size:12px;"><i class="fas fa-calendar me-1"></i>RDV du {{ rdv.dateHeure|date('d/m/Y H:i') }} — Motif: {{ rdv.motif }}</div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="card-header-title"><i class="fas fa-comment-medical me-2 text-success"></i>Motif & Observations</h5></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Motif de Consultation <span class="text-danger">*</span></label>
+                    <input type="text" name="motif" class="form-control" value="{{ rdv ? rdv.motif : '' }}" placeholder="Ex: Fièvre, Douleurs abdominales…" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Observations Cliniques</label>
+                    <textarea name="observations" class="form-control" rows="4" placeholder="Signes cliniques observés, examen physique…"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Diagnostic</label>
+                    <textarea name="diagnostic" class="form-control" rows="3" placeholder="Diagnostic retenu…"></textarea>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Traitement Prescrit</label>
+                        <textarea name="traitement" class="form-control" rows="4" placeholder="Traitements prescrits…"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold"><i class="fas fa-prescription me-1"></i>Ordonnance</label>
+                        <textarea name="ordonnance" class="form-control" rows="4" placeholder="Médicaments prescrits avec posologies…"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Examens à prescrire -->
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="card-header-title"><i class="fas fa-vials me-2 text-purple" style="color:#7c3aed;"></i>Examens & Soins à Prescrire</h5></div>
+            <div class="card-body">
+                <div class="row g-2">
+                    {% for acte in actes_examens %}
+                    <div class="col-md-6">
+                        <div class="form-check border rounded p-2">
+                            <input class="form-check-input" type="checkbox" name="examens[]" value="{{ acte.id }}" id="examen_{{ acte.id }}">
+                            <label class="form-check-label" for="examen_{{ acte.id }}" style="font-size:13px;cursor:pointer;">
+                                <span class="fw-semibold">{{ acte.libelle }}</span>
+                                <span class="text-muted ms-1">({{ acte.prixNormal|number_format(0, ',', ' ') }} F)</span>
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <!-- Constantes Vitales -->
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="card-header-title"><i class="fas fa-heartbeat me-2 text-danger"></i>Constantes Vitales</h5></div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6"><label class="form-label" style="font-size:12px;">Poids (kg)</label><input type="text" name="poids" class="form-control form-control-sm" placeholder="Ex: 70"></div>
+                    <div class="col-6"><label class="form-label" style="font-size:12px;">Taille (cm)</label><input type="text" name="taille" class="form-control form-control-sm" placeholder="Ex: 175"></div>
+                    <div class="col-6"><label class="form-label" style="font-size:12px;">Tension (mmHg)</label><input type="text" name="tension_arterielle" class="form-control form-control-sm" placeholder="Ex: 120/80"></div>
+                    <div class="col-6"><label class="form-label" style="font-size:12px;">Température (°C)</label><input type="text" name="temperature" class="form-control form-control-sm" placeholder="Ex: 37.5"></div>
+                    <div class="col-6"><label class="form-label" style="font-size:12px;">Fréq. Cardiaque</label><input type="text" name="frequence_cardiaque" class="form-control form-control-sm" placeholder="Ex: 80 bpm"></div>
+                    <div class="col-6"><label class="form-label" style="font-size:12px;">SpO2 (%)</label><input type="text" name="saturation_oxygene" class="form-control form-control-sm" placeholder="Ex: 98%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-save me-2"></i>Enregistrer Consultation</button>
+                    <a href="{{ path('app_consultation_index') }}" class="btn btn-outline-secondary"><i class="fas fa-times me-1"></i>Annuler</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</form>
+{% endblock %}
+{% block javascripts %}
+<script>
+{% if not patient %}
+initPatientSearch(document.getElementById('patientSearch'), document.getElementById('patientId'), document.getElementById('patientDropdown'));
+{% endif %}
+</script>
+{% endblock %}

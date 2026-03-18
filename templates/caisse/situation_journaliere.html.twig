@@ -1,0 +1,128 @@
+{% extends 'base.html.twig' %}
+{% block title %}Situation Journalière{% endblock %}
+{% block page_title %}<i class="fas fa-file-invoice-dollar me-2 text-primary"></i>Situation Journalière{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <form method="get" class="d-flex gap-2 align-items-center">
+        <label class="fw-semibold me-1">Date :</label>
+        <input type="date" name="date" value="{{ date|date('Y-m-d') }}" class="form-control" style="width:180px;">
+        <button type="submit" class="btn btn-primary">Afficher</button>
+    </form>
+    <button onclick="window.print()" class="btn btn-outline-primary no-print">
+        <i class="fas fa-print me-2"></i>Imprimer
+    </button>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-blue"><i class="fas fa-file-invoice"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats.nb ?? 0 }}</div>
+                <div class="stat-label">Factures</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-green"><i class="fas fa-coins"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ (stats.encaisse ?? 0)|number_format(0, ',', ' ') }}</div>
+                <div class="stat-label">Encaissé (FCFA)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-cyan"><i class="fas fa-building"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ (stats.assurance ?? 0)|number_format(0, ',', ' ') }}</div>
+                <div class="stat-label">Part Assurance (FCFA)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-orange"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ (stats.total ?? 0)|number_format(0, ',', ' ') }}</div>
+                <div class="stat-label">Total Facturé (FCFA)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-header-title">
+            <i class="fas fa-list me-2 text-primary"></i>
+            Détail des Factures du {{ date|date('d/m/Y') }}
+            {% if caissier %}— Caissier: {{ caissier.nomComplet }}{% endif %}
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>N° Facture</th>
+                    <th>Patient</th>
+                    <th>Prestations</th>
+                    <th>Montant Total</th>
+                    <th>Assurance</th>
+                    <th>Part Patient</th>
+                    <th>Reçu</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i, facture in factures %}
+                <tr>
+                    <td><small class="text-muted">{{ i + 1 }}</small></td>
+                    <td><span class="badge bg-primary-subtle text-primary">{{ facture.numeroFacture }}</span></td>
+                    <td>
+                        <div class="fw-semibold" style="font-size:13px;">{{ facture.patient.nomComplet }}</div>
+                        <div class="text-muted" style="font-size:11px;">{{ facture.patient.telephone }}</div>
+                    </td>
+                    <td>
+                        {% for ligne in facture.lignes %}
+                        <div style="font-size:11px;color:#475569;">• {{ ligne.designation|slice(0,30) }}</div>
+                        {% endfor %}
+                    </td>
+                    <td class="fw-bold">{{ facture.montantTotal|number_format(0, ',', ' ') }}</td>
+                    <td class="text-info">{{ facture.partAssurance|number_format(0, ',', ' ') }}</td>
+                    <td class="fw-bold text-primary">{{ facture.partPatient|number_format(0, ',', ' ') }}</td>
+                    <td class="text-success fw-semibold">{{ facture.montantRecu|number_format(0, ',', ' ') }}</td>
+                    <td>
+                        <span class="badge {{ facture.statut == 'paye' ? 'bg-success' : 'bg-warning text-dark' }}">
+                            {{ facture.statutLibelle }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="fas fa-calendar-times fa-2x mb-2 d-block opacity-25"></i>
+                        Aucune facture ce jour
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if factures|length > 0 %}
+            <tfoot>
+                <tr style="background:#f0f7ff;font-weight:700;">
+                    <td colspan="4" class="text-end">TOTAUX :</td>
+                    <td>{{ (stats.total ?? 0)|number_format(0, ',', ' ') }}</td>
+                    <td class="text-info">{{ (stats.assurance ?? 0)|number_format(0, ',', ' ') }}</td>
+                    <td class="text-primary">{{ (stats.patient_part ?? 0)|number_format(0, ',', ' ') }}</td>
+                    <td class="text-success">{{ (stats.encaisse ?? 0)|number_format(0, ',', ' ') }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,256 @@
+{% extends 'base.html.twig' %}
+{% block title %}Tableau de Bord - CSI{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-bar">
+    <div>
+        <h1 class="page-heading"><i class="fas fa-tachometer-alt"></i> Tableau de Bord</h1>
+        <nav><ol class="breadcrumb">
+            <li class="breadcrumb-item active">Accueil</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <span style="font-size:.82rem;color:#78909C"><i class="fas fa-calendar"></i> {{ "now"|date('d/m/Y') }}</span>
+        <select id="dashboard-period" class="form-select" style="width:140px;font-size:.82rem"
+                onchange="refreshDashboard(this.value)">
+            <option value="today">Aujourd'hui</option>
+            <option value="week">Cette semaine</option>
+            <option value="month" selected>Ce mois</option>
+        </select>
+        <button onclick="refreshDashboard(document.getElementById('dashboard-period').value)"
+                class="btn btn-light btn-sm"><i class="fas fa-sync-alt"></i></button>
+    </div>
+</div>
+
+{# Bandeau alertes #}
+{% if alertes|length > 0 %}
+<div style="margin-bottom:1.25rem">
+{% for alerte in alertes %}
+<div class="alert alert-{{ alerte.type }}" data-dismiss="5000" style="margin-bottom:.4rem">
+    <i class="fas fa-{{ alerte.icon }}"></i>
+    <div><strong>{{ alerte.titre }}</strong> — {{ alerte.message }}</div>
+    {% if alerte.lien %}
+    <a href="{{ alerte.lien }}" class="btn btn-{{ alerte.type }} btn-sm" style="margin-left:auto;white-space:nowrap">
+        Voir <i class="fas fa-arrow-right"></i>
+    </a>
+    {% endif %}
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+{# KPI Cards #}
+<div id="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:1rem;margin-bottom:1.5rem">
+    <div class="stat-card stat-blue">
+        <div class="stat-icon"><i class="fas fa-user-injured"></i></div>
+        <div class="stat-body">
+            <div class="stat-value" id="kpi-patients">{{ kpis.patientsJour }}</div>
+            <div class="stat-label">Patients aujourd'hui</div>
+            <div class="stat-change up"><i class="fas fa-arrow-up"></i> {{ kpis.variationPatients }}% vs hier</div>
+        </div>
+    </div>
+    <div class="stat-card stat-green">
+        <div class="stat-icon"><i class="fas fa-stethoscope"></i></div>
+        <div class="stat-body">
+            <div class="stat-value" id="kpi-consultations">{{ kpis.consultationsJour }}</div>
+            <div class="stat-label">Consultations</div>
+        </div>
+    </div>
+    <div class="stat-card stat-orange">
+        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+        <div class="stat-body">
+            <div class="stat-value" id="kpi-rdv">{{ kpis.rdvJour }}</div>
+            <div class="stat-label">RDV du jour</div>
+        </div>
+    </div>
+    <div class="stat-card stat-cyan">
+        <div class="stat-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+        <div class="stat-body">
+            <div class="stat-value" id="kpi-factures">{{ kpis.facturesJour }}</div>
+            <div class="stat-label">Factures émises</div>
+        </div>
+    </div>
+    <div class="stat-card stat-purple">
+        <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+        <div class="stat-body">
+            <div class="stat-value" id="kpi-recettes">{{ kpis.recettesJour|number_format(0,',',' ') }}</div>
+            <div class="stat-label">Recettes ({{ currency }})</div>
+        </div>
+    </div>
+    <div class="stat-card stat-red">
+        <div class="stat-icon"><i class="fas fa-pills"></i></div>
+        <div class="stat-body">
+            <div class="stat-value" id="kpi-ruptures">{{ kpis.ruptures }}</div>
+            <div class="stat-label">Ruptures pharmacie</div>
+        </div>
+    </div>
+</div>
+
+{# Graphiques principaux #}
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
+    <div class="card">
+        <div class="card-header">
+            <h6><i class="fas fa-chart-area"></i> Recettes des 30 derniers jours</h6>
+            <div class="d-flex gap-1">
+                <button onclick="zoomChart('chart-revenus','in')" class="btn btn-light btn-sm" title="Zoom +">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button onclick="zoomChart('chart-revenus','out')" class="btn btn-light btn-sm" title="Zoom -">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button onclick="downloadChart('chart-revenus')" class="btn btn-light btn-sm" title="Télécharger">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height:260px"><canvas id="chart-revenus"></canvas></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h6><i class="fas fa-chart-pie"></i> Répartition actes</h6>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height:260px"><canvas id="chart-actes"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
+    <div class="card">
+        <div class="card-header">
+            <h6><i class="fas fa-chart-bar"></i> Consultations par médecin</h6>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height:220px"><canvas id="chart-medecins"></canvas></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h6><i class="fas fa-warehouse"></i> Alertes stock pharmacie</h6>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height:220px"><canvas id="chart-stock"></canvas></div>
+        </div>
+    </div>
+</div>
+
+{# Tables en bas #}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+    {# Dernières consultations #}
+    <div class="card">
+        <div class="card-header">
+            <h6><i class="fas fa-history"></i> Dernières consultations</h6>
+            <a href="{{ path('app_consultation_index') }}" class="btn btn-light btn-sm">Voir tout</a>
+        </div>
+        <div style="max-height:280px;overflow-y:auto">
+        {% for c in dernieresConsultations %}
+        <div style="padding:.7rem 1.25rem;border-bottom:1px solid #ECEFF1;display:flex;align-items:center;gap:.6rem">
+            <div style="width:38px;height:38px;border-radius:8px;background:var(--csi-light);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:var(--csi-primary);flex-shrink:0">
+                {{ c.patient.prenom[0] ?? '' }}{{ c.patient.nom[0] ?? '' }}
+            </div>
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                    {{ c.patient.nom }} {{ c.patient.prenom }}
+                </div>
+                <div style="font-size:.75rem;color:#78909C">
+                    Dr {{ c.medecin.nom }} — {{ c.dateHeure|date('H:i') }}
+                </div>
+            </div>
+            {% if c.statut == 'terminee' %}
+            <span class="badge-status badge-success" style="font-size:.7rem">Terminée</span>
+            {% elseif c.statut == 'en_cours' %}
+            <span class="badge-status badge-warning" style="font-size:.7rem">En cours</span>
+            {% endif %}
+        </div>
+        {% else %}
+        <div style="padding:1.5rem;text-align:center;color:#90A4AE;font-size:.88rem">
+            Aucune consultation aujourd'hui
+        </div>
+        {% endfor %}
+        </div>
+    </div>
+
+    {# Prochains RDV #}
+    <div class="card">
+        <div class="card-header">
+            <h6><i class="fas fa-calendar-alt"></i> Prochains rendez-vous</h6>
+            <a href="{{ path('app_rdv_index') }}" class="btn btn-light btn-sm">Voir tout</a>
+        </div>
+        <div style="max-height:280px;overflow-y:auto">
+        {% for rdv in prochainsRdv %}
+        <div style="padding:.7rem 1.25rem;border-bottom:1px solid #ECEFF1;display:flex;align-items:center;gap:.6rem">
+            <div style="text-align:center;min-width:48px;background:var(--csi-light);border-radius:8px;padding:.3rem">
+                <div style="font-size:.7rem;color:#78909C">{{ rdv.dateHeure|date('d/m') }}</div>
+                <div style="font-size:.9rem;font-weight:800;color:var(--csi-primary)">{{ rdv.dateHeure|date('H:i') }}</div>
+            </div>
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:.88rem">{{ rdv.patient.nom }} {{ rdv.patient.prenom }}</div>
+                <div style="font-size:.75rem;color:#78909C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                    Dr {{ rdv.medecin.nom }} — {{ rdv.motif }}
+                </div>
+            </div>
+            {% if rdv.statut == 'confirme' %}
+            <span class="badge-status badge-success" style="font-size:.7rem">Confirmé</span>
+            {% else %}
+            <span class="badge-status badge-warning" style="font-size:.7rem">Planifié</span>
+            {% endif %}
+        </div>
+        {% else %}
+        <div style="padding:1.5rem;text-align:center;color:#90A4AE;font-size:.88rem">
+            Aucun rendez-vous à venir
+        </div>
+        {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const chartData = {{ chartData|json_encode|raw }};
+let chartInstances = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    CSI.initDashboardCharts(chartData);
+});
+
+function refreshDashboard(period) {
+    fetch('/api/dashboard/kpis?period=' + period)
+        .then(r => r.json())
+        .then(data => {
+            if (data.kpis) {
+                document.getElementById('kpi-patients').textContent     = data.kpis.patientsJour ?? '—';
+                document.getElementById('kpi-consultations').textContent= data.kpis.consultationsJour ?? '—';
+                document.getElementById('kpi-rdv').textContent          = data.kpis.rdvJour ?? '—';
+                document.getElementById('kpi-factures').textContent     = data.kpis.facturesJour ?? '—';
+                document.getElementById('kpi-recettes').textContent     = Number(data.kpis.recettesJour||0).toLocaleString('fr-FR');
+                document.getElementById('kpi-ruptures').textContent     = data.kpis.ruptures ?? '—';
+            }
+        })
+        .catch(err => console.error('Refresh KPIs error:', err));
+}
+
+function zoomChart(canvasId, direction) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const h = parseInt(canvas.parentElement.style.height) || 260;
+    canvas.parentElement.style.height = direction === 'in' ? (h + 60) + 'px' : Math.max(180, h - 60) + 'px';
+    const chart = Chart.getChart(canvas);
+    if (chart) chart.resize();
+}
+
+function downloadChart(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = canvasId + '_' + new Date().toISOString().slice(0,10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+</script>
+{% endblock %}

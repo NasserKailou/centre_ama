@@ -1,0 +1,287 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Administration — Utilisateurs{% endblock %}
+{% block page_title %}<i class="fas fa-cogs"></i> Administration{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title-h1">Gestion des utilisateurs</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+            <span>/</span>
+            <span>Administration</span>
+        </nav>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-primary" onclick="document.getElementById('modal-create-user').style.display='flex'">
+            <i class="fas fa-user-plus"></i> Nouvel utilisateur
+        </button>
+    </div>
+</div>
+
+{# Stats utilisateurs #}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem">
+    {% set roles = {'ROLE_ADMIN':'Admins','ROLE_MEDECIN':'Médecins','ROLE_CAISSIER':'Caissiers','ROLE_ASSISTANT':'Assistants'} %}
+    {% for role, label in roles %}
+    {% set count = users|filter(u => role in u.roles)|length %}
+    <div class="card" style="text-align:center;padding:1rem">
+        <div style="font-size:1.75rem;font-weight:800;color:var(--csi-primary)">{{ count }}</div>
+        <div style="font-size:.8rem;color:#607D8B">{{ label }}</div>
+    </div>
+    {% endfor %}
+    <div class="card" style="text-align:center;padding:1rem;background:var(--csi-primary);color:#fff">
+        <div style="font-size:1.75rem;font-weight:800">{{ users|length }}</div>
+        <div style="font-size:.8rem;opacity:.85">Total utilisateurs</div>
+    </div>
+</div>
+
+{# Tableau utilisateurs #}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-users-cog"></i> Liste des comptes</h3>
+        <div style="display:flex;gap:.5rem">
+            <input type="text" id="search-users" class="form-control" placeholder="Rechercher..." style="width:220px;font-size:.85rem">
+        </div>
+    </div>
+    <div class="card-body" style="padding:0">
+        <table class="table" id="table-users">
+            <thead>
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Email</th>
+                    <th>Rôle</th>
+                    <th>Spécialité</th>
+                    <th>Statut</th>
+                    <th>Dernière connexion</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:.6rem">
+                            <div style="width:36px;height:36px;border-radius:50%;background:var(--csi-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0">
+                                {{ user.prenom[0] ?? '' }}{{ user.nom[0] ?? '' }}
+                            </div>
+                            <div>
+                                <div style="font-weight:600">{{ user.prenom }} {{ user.nom }}</div>
+                                <div style="font-size:.75rem;color:#90A4AE">ID #{{ user.id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% if 'ROLE_ADMIN' in user.roles %}
+                            <span class="badge badge-danger">Admin</span>
+                        {% elseif 'ROLE_MEDECIN' in user.roles %}
+                            <span class="badge badge-info">Médecin</span>
+                        {% elseif 'ROLE_CAISSIER' in user.roles %}
+                            <span class="badge badge-warning">Caissier</span>
+                        {% elseif 'ROLE_ASSISTANT' in user.roles %}
+                            <span class="badge badge-secondary">Assistant</span>
+                        {% else %}
+                            <span class="badge badge-light">Utilisateur</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.specialite ?? '—' }}</td>
+                    <td>
+                        <span class="badge badge-{{ user.actif ? 'success' : 'secondary' }}">
+                            {{ user.actif ? 'Actif' : 'Inactif' }}
+                        </span>
+                    </td>
+                    <td style="font-size:.82rem;color:#607D8B">
+                        {{ user.lastLogin ? user.lastLogin|date('d/m/Y H:i') : 'Jamais' }}
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:.3rem">
+                            <button class="btn btn-sm btn-secondary"
+                                    onclick="editUser({{ {
+                                        id: user.id,
+                                        nom: user.nom,
+                                        prenom: user.prenom,
+                                        email: user.email,
+                                        telephone: user.telephone ?? '',
+                                        specialite: user.specialite ?? '',
+                                        role: user.roles[0] ?? 'ROLE_ASSISTANT',
+                                        actif: user.actif ? 1 : 0
+                                    }|json_encode|e('html_attr') }})"
+                                    title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form method="post" action="{{ path('app_admin_toggle_user', {id: user.id}) }}"
+                                  onsubmit="return confirm('Changer le statut de cet utilisateur ?')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('toggle_user_' ~ user.id) }}">
+                                <button type="submit" class="btn btn-sm btn-{{ user.actif ? 'warning' : 'success' }}"
+                                        title="{{ user.actif ? 'Désactiver' : 'Activer' }}">
+                                    <i class="fas fa-{{ user.actif ? 'user-slash' : 'user-check' }}"></i>
+                                </button>
+                            </form>
+                            <form method="post" action="{{ path('app_admin_reset_password', {id: user.id}) }}"
+                                  onsubmit="return confirm('Réinitialiser le mot de passe de ' + '{{ user.prenom }}' + ' ?')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('reset_pwd_' ~ user.id) }}">
+                                <button type="submit" class="btn btn-sm btn-info" title="Réinitialiser le mot de passe" style="color:#fff">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align:center;padding:2rem;color:#90A4AE">Aucun utilisateur trouvé</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Section actes médicaux #}
+<div class="card" style="margin-top:1.25rem">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-procedures"></i> Actes médicaux</h3>
+        <a href="{{ path('app_admin_actes') }}" class="btn btn-sm btn-primary">Gérer les actes</a>
+    </div>
+    <div class="card-body">
+        <p style="color:#607D8B;margin:0">{{ actes|length }} actes médicaux configurés dans le système.</p>
+    </div>
+</div>
+
+{# ── MODAL Créer utilisateur ── #}
+<div id="modal-create-user" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:1.5rem;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+            <h3 style="margin:0;font-size:1.05rem;font-weight:700"><i class="fas fa-user-plus"></i> Créer un utilisateur</h3>
+            <button onclick="document.getElementById('modal-create-user').style.display='none'"
+                    style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#90A4AE">×</button>
+        </div>
+        <form method="post" action="{{ path('app_admin_create_user') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('create_user') }}">
+            <div class="form-grid form-grid-2">
+                <div class="form-group">
+                    <label class="form-label required">Nom <span class="text-danger">*</span></label>
+                    <input type="text" name="nom" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Prénom <span class="text-danger">*</span></label>
+                    <input type="text" name="prenom" class="form-control" required>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                    <label class="form-label required">Email <span class="text-danger">*</span></label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Téléphone</label>
+                    <input type="tel" name="telephone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Rôle <span class="text-danger">*</span></label>
+                    <select name="role" class="form-control" required>
+                        <option value="ROLE_ASSISTANT">Assistant</option>
+                        <option value="ROLE_CAISSIER">Caissier</option>
+                        <option value="ROLE_MEDECIN">Médecin</option>
+                        <option value="ROLE_ADMIN">Administrateur</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                    <label class="form-label">Spécialité (médecins)</label>
+                    <input type="text" name="specialite" class="form-control" placeholder="Ex : Médecine générale">
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Mot de passe <span class="text-danger">*</span></label>
+                    <input type="password" name="password" class="form-control" required minlength="8">
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Confirmer MDP <span class="text-danger">*</span></label>
+                    <input type="password" name="password_confirm" class="form-control" required>
+                </div>
+            </div>
+            <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem">
+                <button type="button" onclick="document.getElementById('modal-create-user').style.display='none'"
+                        class="btn btn-secondary">Annuler</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Créer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── MODAL Modifier utilisateur ── #}
+<div id="modal-edit-user" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:1.5rem;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+            <h3 style="margin:0;font-size:1.05rem;font-weight:700"><i class="fas fa-user-edit"></i> Modifier l'utilisateur</h3>
+            <button onclick="document.getElementById('modal-edit-user').style.display='none'"
+                    style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#90A4AE">×</button>
+        </div>
+        <form method="post" id="form-edit-user" action="">
+            <input type="hidden" name="_token" id="edit-token" value="">
+            <div class="form-grid form-grid-2">
+                <div class="form-group">
+                    <label class="form-label">Nom</label>
+                    <input type="text" name="nom" id="edit-nom" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Prénom</label>
+                    <input type="text" name="prenom" id="edit-prenom" class="form-control" required>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" id="edit-email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Téléphone</label>
+                    <input type="tel" name="telephone" id="edit-telephone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Rôle</label>
+                    <select name="role" id="edit-role" class="form-control">
+                        <option value="ROLE_ASSISTANT">Assistant</option>
+                        <option value="ROLE_CAISSIER">Caissier</option>
+                        <option value="ROLE_MEDECIN">Médecin</option>
+                        <option value="ROLE_ADMIN">Administrateur</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                    <label class="form-label">Spécialité</label>
+                    <input type="text" name="specialite" id="edit-specialite" class="form-control">
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                    <label class="form-label">Nouveau mot de passe (laisser vide pour ne pas changer)</label>
+                    <input type="password" name="password" class="form-control" minlength="8">
+                </div>
+            </div>
+            <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem">
+                <button type="button" onclick="document.getElementById('modal-edit-user').style.display='none'"
+                        class="btn btn-secondary">Annuler</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function editUser(data) {
+    if (typeof data === 'string') data = JSON.parse(data);
+    document.getElementById('form-edit-user').action = '/admin/user/' + data.id + '/edit';
+    document.getElementById('edit-token').value = '{{ csrf_token("edit_user_TOKEN") }}'.replace('TOKEN', data.id);
+    document.getElementById('edit-nom').value = data.nom || '';
+    document.getElementById('edit-prenom').value = data.prenom || '';
+    document.getElementById('edit-email').value = data.email || '';
+    document.getElementById('edit-telephone').value = data.telephone || '';
+    document.getElementById('edit-specialite').value = data.specialite || '';
+    document.getElementById('edit-role').value = data.role || 'ROLE_ASSISTANT';
+    document.getElementById('modal-edit-user').style.display = 'flex';
+}
+
+// Recherche dans le tableau
+document.getElementById('search-users').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#table-users tbody tr').forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

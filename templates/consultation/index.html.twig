@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+{% block title %}Consultations - CSI{% endblock %}
+{% block page_title %}<i class="fas fa-stethoscope me-2 text-primary"></i>Consultations{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div></div>
+    {% if is_granted('ROLE_MEDECIN') %}<a href="{{ path('app_consultation_new') }}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Nouvelle Consultation</a>{% endif %}
+</div>
+<div class="card">
+    <div class="card-header">
+        <form method="get" class="d-flex gap-2 flex-wrap">
+            <input type="text" name="search" value="{{ search }}" class="form-control form-control-sm" style="width:200px;" placeholder="Patient…">
+            <input type="date" name="date" value="{{ date_filter }}" class="form-control form-control-sm">
+            <select name="statut" class="form-select form-select-sm" style="width:140px;">
+                <option value="">Tous</option>
+                <option value="en_cours" {{ statut_filter == 'en_cours' ? 'selected' : '' }}>En cours</option>
+                <option value="terminee" {{ statut_filter == 'terminee' ? 'selected' : '' }}>Terminée</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Filtrer</button>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Patient</th><th>Médecin</th><th>Motif</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody>
+                {% for c in pagination %}
+                <tr>
+                    <td><a href="{{ path('app_patient_show', {'id': c.patient.id}) }}" class="fw-semibold text-decoration-none" style="color:#1e40af;">{{ c.patient.nomComplet }}</a><div class="text-muted" style="font-size:11px;">{{ c.patient.telephone }}</div></td>
+                    <td><small>Dr. {{ c.medecin.nomComplet }}</small></td>
+                    <td><span style="font-size:13px;">{{ c.motif|slice(0,40) }}{% if c.motif|length > 40 %}…{% endif %}</span></td>
+                    <td><small class="text-muted">{{ c.dateHeure|date('d/m/Y H:i') }}</small></td>
+                    <td><span class="badge {{ c.statut == 'terminee' ? 'bg-success' : 'bg-warning text-dark' }}">{{ c.statut == 'terminee' ? 'Terminée' : 'En cours' }}</span></td>
+                    <td><a href="{{ path('app_consultation_show', {'id': c.id}) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center py-5 text-muted">Aucune consultation</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if pagination.pageCount > 1 %}<div class="card-footer bg-transparent">{{ knp_pagination_render(pagination) }}</div>{% endif %}
+</div>
+{% endblock %}

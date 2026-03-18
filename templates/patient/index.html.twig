@@ -1,0 +1,120 @@
+{% extends 'base.html.twig' %}
+{% block title %}Patients - CSI{% endblock %}
+{% block page_title %}<i class="fas fa-users me-2 text-primary"></i>Dossiers Patients{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <p class="text-muted mb-0">Gérez les dossiers de tous les patients du centre</p>
+    </div>
+    {% if is_granted('ROLE_ASSISTANT') %}
+    <a href="{{ path('app_patient_new') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus me-2"></i>Nouveau Patient
+    </a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <form method="get" class="d-flex gap-2">
+            <div class="input-group" style="max-width:380px;">
+                <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" name="search" value="{{ search }}" class="form-control border-start-0"
+                       placeholder="Nom, téléphone, N° dossier…">
+            </div>
+            <button type="submit" class="btn btn-primary">Rechercher</button>
+            {% if search %}
+            <a href="{{ path('app_patient_index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-times"></i>
+            </a>
+            {% endif %}
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>N° Dossier</th>
+                    <th>Patient</th>
+                    <th>Téléphone</th>
+                    <th>Âge / Sexe</th>
+                    <th>Groupe Sanguin</th>
+                    <th>Enregistré le</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for patient in pagination %}
+                <tr>
+                    <td>
+                        <span class="badge bg-primary-subtle text-primary fw-semibold">{{ patient.numeroDossier }}</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="user-avatar" style="width:34px;height:34px;font-size:12px;">
+                                {{ patient.prenom|slice(0,1)|upper }}{{ patient.nom|slice(0,1)|upper }}
+                            </div>
+                            <div>
+                                <div class="fw-semibold" style="font-size:13.5px;">{{ patient.nomComplet }}</div>
+                                {% if patient.allergies %}
+                                <small class="text-danger"><i class="fas fa-exclamation-circle"></i> Allergies</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="text-muted">{{ patient.telephone }}</span></td>
+                    <td>
+                        {% if patient.age %}{{ patient.age }} ans{% else %}<span class="text-muted">—</span>{% endif %}
+                        {% if patient.sexe %}
+                        <span class="badge {{ patient.sexe == 'F' ? 'bg-pink' : 'bg-info' }} ms-1" 
+                              style="background:{{ patient.sexe == 'F' ? '#fce7f3' : '#e0f2fe' }};color:{{ patient.sexe == 'F' ? '#be185d' : '#0369a1' }};">
+                            {{ patient.sexe == 'F' ? '♀ F' : '♂ M' }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if patient.groupeSanguin %}
+                        <span class="badge bg-danger-subtle text-danger">{{ patient.groupeSanguin }}</span>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td><small class="text-muted">{{ patient.createdAt|date('d/m/Y') }}</small></td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ path('app_patient_show', {'id': patient.id}) }}" 
+                               class="btn btn-outline-primary" title="Voir dossier">
+                                <i class="fas fa-folder-open"></i>
+                            </a>
+                            <a href="{{ path('app_patient_edit', {'id': patient.id}) }}" 
+                               class="btn btn-outline-secondary" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if is_granted('ROLE_CAISSIER') %}
+                            <a href="{{ path('app_caisse_new') }}?patient_id={{ patient.id }}" 
+                               class="btn btn-outline-success" title="Facturer">
+                                <i class="fas fa-cash-register"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fas fa-users fa-3x mb-3 opacity-25 d-block"></i>
+                        Aucun patient trouvé{% if search %} pour "{{ search }}"{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if pagination.pageCount > 1 %}
+    <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
+        <small class="text-muted">{{ pagination.totalItemCount }} patients trouvés</small>
+        <div>{{ knp_pagination_render(pagination) }}</div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

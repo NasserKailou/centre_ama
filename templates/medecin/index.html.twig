@@ -1,0 +1,188 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Espace Médecin — Tableau de bord{% endblock %}
+{% block page_title %}<i class="fas fa-user-md"></i> Espace Médecin{% endblock %}
+
+{% block content %}
+{% set user = app.user %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title-h1">Bonjour Dr {{ user.prenom }} {{ user.nom }}</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+            <span>/</span>
+            <span>Espace Médecin</span>
+        </nav>
+    </div>
+    <div class="page-actions">
+        <a href="{{ path('app_consultation_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvelle consultation
+        </a>
+    </div>
+</div>
+
+{# KPIs #}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem">
+    <div class="card kpi-card">
+        <div class="kpi-icon" style="background:rgba(26,115,232,.12);color:var(--csi-primary)">
+            <i class="fas fa-stethoscope"></i>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-value">{{ stats.consultationsAujourdhui }}</div>
+            <div class="kpi-label">Consultations aujourd'hui</div>
+        </div>
+    </div>
+    <div class="card kpi-card">
+        <div class="kpi-icon" style="background:rgba(255,160,0,.12);color:var(--csi-warning)">
+            <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-value">{{ stats.rdvAujourdhui }}</div>
+            <div class="kpi-label">RDV aujourd'hui</div>
+        </div>
+    </div>
+    <div class="card kpi-card">
+        <div class="kpi-icon" style="background:rgba(0,197,137,.12);color:var(--csi-success)">
+            <i class="fas fa-vials"></i>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-value">{{ stats.examensEnAttente }}</div>
+            <div class="kpi-label">Examens en attente</div>
+        </div>
+    </div>
+    <div class="card kpi-card">
+        <div class="kpi-icon" style="background:rgba(233,30,99,.12);color:var(--csi-danger)">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-value">{{ stats.totalPatientsMois }}</div>
+            <div class="kpi-label">Patients ce mois</div>
+        </div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+    {# RDV du jour #}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-calendar-day"></i> RDV du jour</h3>
+            <a href="{{ path('app_rdv_index') }}" class="btn btn-sm btn-secondary">Voir tout</a>
+        </div>
+        <div class="card-body" style="padding:0">
+            {% if rdvAujourdhui|length == 0 %}
+            <div style="text-align:center;padding:2rem;color:#90A4AE">
+                <i class="fas fa-calendar-times" style="font-size:2rem;margin-bottom:.5rem;display:block"></i>
+                Aucun RDV aujourd'hui
+            </div>
+            {% else %}
+            <table class="table">
+                <thead>
+                    <tr><th>Heure</th><th>Patient</th><th>Motif</th><th>Statut</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for rdv in rdvAujourdhui %}
+                    <tr>
+                        <td><strong>{{ rdv.dateHeure|date('H:i') }}</strong></td>
+                        <td>{{ rdv.patient.prenom }} {{ rdv.patient.nom }}</td>
+                        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ rdv.motif }}">{{ rdv.motif }}</td>
+                        <td>
+                            <span class="badge badge-{{ rdv.statut == 'confirme' ? 'success' : (rdv.statut == 'planifie' ? 'info' : 'secondary') }}">
+                                {{ rdv.statut }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ path('app_consultation_new') }}?rdv_id={{ rdv.id }}"
+                               class="btn btn-sm btn-primary" title="Démarrer consultation">
+                                <i class="fas fa-play"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Examens en attente #}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-vials"></i> Examens en attente de résultats</h3>
+        </div>
+        <div class="card-body" style="padding:0">
+            {% if examensEnAttente|length == 0 %}
+            <div style="text-align:center;padding:2rem;color:#90A4AE">
+                <i class="fas fa-check-circle" style="font-size:2rem;color:var(--csi-success);margin-bottom:.5rem;display:block"></i>
+                Aucun examen en attente
+            </div>
+            {% else %}
+            <table class="table">
+                <thead>
+                    <tr><th>Examen</th><th>Patient</th><th>Date</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    {% for exam in examensEnAttente %}
+                    <tr>
+                        <td><strong style="font-size:.85rem">{{ exam.typeExamen }}</strong></td>
+                        <td style="font-size:.85rem">{{ exam.consultation.patient.prenom }} {{ exam.consultation.patient.nom }}</td>
+                        <td style="font-size:.8rem;color:#607D8B">{{ exam.createdAt|date('d/m') }}</td>
+                        <td>
+                            <a href="{{ path('app_consultation_show', {id: exam.consultation.id}) }}"
+                               class="btn btn-sm btn-info" style="color:#fff" title="Voir consultation">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Consultations récentes #}
+    <div class="card" style="grid-column:1/-1">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-history"></i> Mes consultations récentes</h3>
+            <a href="{{ path('app_consultation_index') }}" class="btn btn-sm btn-secondary">Voir tout</a>
+        </div>
+        <div class="card-body" style="padding:0">
+            {% if consultationsRecentes|length == 0 %}
+            <div style="text-align:center;padding:2rem;color:#90A4AE">Aucune consultation récente</div>
+            {% else %}
+            <table class="table">
+                <thead>
+                    <tr><th>Date</th><th>Patient</th><th>Motif</th><th>Diagnostic</th><th>Statut</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for c in consultationsRecentes %}
+                    <tr>
+                        <td style="font-size:.85rem">{{ c.dateHeure|date('d/m/Y H:i') }}</td>
+                        <td>
+                            <a href="{{ path('app_patient_show', {id: c.patient.id}) }}" style="color:var(--csi-primary);font-weight:500">
+                                {{ c.patient.prenom }} {{ c.patient.nom }}
+                            </a>
+                        </td>
+                        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.85rem" title="{{ c.motif }}">{{ c.motif }}</td>
+                        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.85rem;color:#607D8B" title="{{ c.diagnostic }}">{{ c.diagnostic ?? '—' }}</td>
+                        <td>
+                            <span class="badge badge-{{ c.statut == 'terminee' ? 'success' : (c.statut == 'en_cours' ? 'warning' : 'info') }}">
+                                {{ c.statut|replace({'_': ' '}) }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ path('app_consultation_show', {id: c.id}) }}" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

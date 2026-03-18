@@ -1,0 +1,166 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau produit pharmaceutique{% endblock %}
+{% block page_title %}<i class="fas fa-plus-circle"></i> Nouveau produit{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title-h1">Ajouter un produit pharmaceutique</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+            <span>/</span>
+            <a href="{{ path('app_pharmacie_index') }}">Pharmacie</a>
+            <span>/</span>
+            <span>Nouveau produit</span>
+        </nav>
+    </div>
+    <div class="page-actions">
+        <a href="{{ path('app_pharmacie_index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+</div>
+
+<form method="post" action="{{ path('app_pharmacie_new') }}" novalidate>
+    <input type="hidden" name="_token" value="{{ csrf_token('new_produit') }}">
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem">
+
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+            {# Identification #}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-pills"></i> Identification du produit</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-grid form-grid-2">
+                        <div class="form-group" style="grid-column:1/-1">
+                            <label class="form-label required">Désignation (Dénomination commerciale) <span class="text-danger">*</span></label>
+                            <input type="text" name="designation" class="form-control" required
+                                   placeholder="Ex : Amoxicilline 500 mg comprimé">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">DCI (Dénomination commune internationale)</label>
+                            <input type="text" name="dci" class="form-control" placeholder="Ex : Amoxicilline">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Référence / Code</label>
+                            <input type="text" name="reference" class="form-control" placeholder="Code interne">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Catégorie</label>
+                            <select name="categorie" class="form-control">
+                                <option value="">— Choisir —</option>
+                                {% for cat in ['antibiotique','antiparasitaire','antifongique','antiviral','analgesique','anti-inflammatoire','antihypertenseur','antidiabetique','vitamines','vaccin','solution_injectable','autre'] %}
+                                <option value="{{ cat }}">{{ cat|replace({'_': ' '})|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Forme pharmaceutique</label>
+                            <select name="forme" class="form-control">
+                                <option value="">— Choisir —</option>
+                                {% for f in ['comprime','gelule','sirop','injectable','suppositoire','pommade','collyre','inhalateur','patch','solution'] %}
+                                <option value="{{ f }}">{{ f|replace({'_': ' '})|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Dosage</label>
+                            <input type="text" name="dosage" class="form-control" placeholder="Ex : 500 mg, 10 mg/ml">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Unité de délivrance</label>
+                            <select name="unite" class="form-control">
+                                <option value="">— Choisir —</option>
+                                {% for u in ['comprime','gelule','flacon','ampoule','boite','sachet','tube','patch'] %}
+                                <option value="{{ u }}">{{ u|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Prix #}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-tag"></i> Tarification</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-grid form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Prix d'achat ({{ currency }})</label>
+                            <input type="number" name="prix_achat" step="1" min="0" value="0" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Prix de vente ({{ currency }}) <span class="text-danger">*</span></label>
+                            <input type="number" name="prix_vente" step="1" min="0" value="0" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+            {# Stock #}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-warehouse"></i> Stock initial</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label required">Quantité en stock <span class="text-danger">*</span></label>
+                        <input type="number" name="stock_disponible" min="0" value="0" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Seuil d'alerte (stock minimum)</label>
+                        <input type="number" name="stock_minimum" min="0" value="10" class="form-control">
+                        <small class="text-muted">Alerte si stock ≤ cette valeur</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date de péremption</label>
+                        <input type="date" name="date_peremption" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            {# Fournisseur #}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-truck"></i> Fournisseur</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Nom du fournisseur</label>
+                        <input type="text" name="fournisseur" class="form-control" placeholder="Nom du fournisseur">
+                    </div>
+                </div>
+            </div>
+
+            {# Statut #}
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-group" style="margin:0">
+                        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                            <input type="checkbox" name="actif" value="1" checked
+                                   style="width:16px;height:16px;cursor:pointer">
+                            <span style="font-weight:600">Produit actif</span>
+                        </label>
+                        <small class="text-muted">Un produit inactif n'apparaît pas dans les factures</small>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:.75rem">
+                <i class="fas fa-save"></i> Enregistrer le produit
+            </button>
+        </div>
+
+    </div>
+</form>
+{% endblock %}
