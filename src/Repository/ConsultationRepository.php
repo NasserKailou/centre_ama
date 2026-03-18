@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Consultation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -15,6 +16,41 @@ class ConsultationRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Consultation::class);
+    }
+
+    /**
+     * QueryBuilder filtré pour KnpPaginator.
+     */
+    public function getFilteredQueryBuilder(
+        ?string $search   = null,
+        ?string $date     = null,
+        ?string $statut   = null,
+        ?User   $medecin  = null
+    ): QueryBuilder {
+        $qb = $this->createQueryBuilder('c')
+            ->leftJoin('c.patient', 'p')
+            ->leftJoin('c.medecin', 'm')
+            ->addSelect('p', 'm')
+            ->orderBy('c.dateHeure', 'DESC');
+
+        // Restriction médecin si pas admin
+        if ($medecin && in_array('ROLE_MEDECIN', $medecin->getRoles())
+            && !in_array('ROLE_ADMIN', $medecin->getRoles())) {
+            $qb->andWhere('c.medecin = :medecin')->setParameter('medecin', $medecin);
+        }
+        if ($search) {
+            $qb->andWhere('p.nom LIKE :s OR p.prenom LIKE :s OR p.telephone LIKE :s')
+               ->setParameter('s', '%' . $search . '%');
+        }
+        if ($date) {
+            $qb->andWhere('c.dateHeure >= :d AND c.dateHeure <= :d2')
+               ->setParameter('d',  $date . ' 00:00:00')
+               ->setParameter('d2', $date . ' 23:59:59');
+        }
+        if ($statut) {
+            $qb->andWhere('c.statut = :statut')->setParameter('statut', $statut);
+        }
+        return $qb;
     }
 
     public function findRecentByMedecin(?User $medecin, int $limit = 10): array
@@ -130,6 +166,15 @@ class ConsultationRepository extends ServiceEntityRepository
             ->groupBy('m.id')
             ->orderBy('count', 'DESC')
             ->getQuery()->getResult();
+    }
+
+    public function countByMedecin(User $medecin): int
+    {
+        return (int)$this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->where('c.medecin = :med')
+            ->setParameter('med', $medecin)
+            ->getQuery()->getSingleScalarResult();
     }
 
     public function findWithFilters(

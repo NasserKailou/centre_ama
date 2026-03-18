@@ -11,6 +11,18 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'facture_globale')]
 class FactureGlobale
 {
+    // ─── Constantes statut ────────────────────────────────────────────────
+    const STATUT_PAYE       = 'paye';
+    const STATUT_EN_ATTENTE = 'en_attente';
+    const STATUT_PARTIEL    = 'partiel';
+    const STATUT_ANNULE     = 'annule';
+
+    // ─── Constantes mode paiement ─────────────────────────────────────────
+    const MODE_CASH         = 'cash';
+    const MODE_MOBILE_MONEY = 'mobile_money';
+    const MODE_CHEQUE       = 'cheque';
+    const MODE_VIREMENT     = 'virement';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

@@ -89,7 +89,7 @@ class CaisseController extends AbstractController
                 if ($partenaire) $facture->setPartenaire($partenaire);
             }
 
-            $facture->setNumeroFacture($this->generateNumeroFacture());
+            $facture->setNumero($this->generateNumeroFacture());
             $this->em->persist($facture);
 
             // Lignes de facturation
@@ -149,17 +149,16 @@ class CaisseController extends AbstractController
                     foreach ($facture->getLignes() as $ligne) {
                         if ($ligne->getProduit()) {
                             $produit = $ligne->getProduit();
-                            $stockAvant = $produit->getStockActuel();
+                            $stockAvant = $produit->getStockDisponible();
                             $produit->decrementerStock($ligne->getQuantite());
 
                             $mouvement = new MouvementStock();
                             $mouvement->setProduit($produit);
                             $mouvement->setUser($this->getUser());
-                            $mouvement->setType(MouvementStock::TYPE_SORTIE);
+                            $mouvement->setType('sortie');
                             $mouvement->setQuantite($ligne->getQuantite());
-                            $mouvement->setStockAvant($stockAvant);
-                            $mouvement->setStockApres($produit->getStockActuel());
-                            $mouvement->setMotif("Vente - Facture {$facture->getNumeroFacture()}");
+                            $mouvement->setStockApres($produit->getStockDisponible());
+                            $mouvement->setNotes("Vente - Facture {$facture->getNumero()}");
                             $this->em->persist($mouvement);
                         }
                     }
@@ -174,7 +173,7 @@ class CaisseController extends AbstractController
             return $this->json([
                 'success' => true,
                 'facture_id' => $facture->getId(),
-                'numero' => $facture->getNumeroFacture(),
+                'numero' => $facture->getNumero(),
                 'redirect' => $this->generateUrl('app_caisse_recu', ['id' => $facture->getId()]),
             ]);
         }
@@ -239,9 +238,9 @@ class CaisseController extends AbstractController
 
         return $this->json([
             'id' => $produit->getId(),
-            'nom' => $produit->getNomComplet(),
+            'nom' => $produit->getDesignation(),
             'prix' => (float)$produit->getPrix(),
-            'stock' => $produit->getStockActuel(),
+            'stock' => $produit->getStockDisponible(),
             'disponible' => $produit->isDisponible(),
             'statut' => $produit->getStatutStock(),
         ]);

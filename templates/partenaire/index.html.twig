@@ -18,7 +18,7 @@
 </div>
 
 {# Stats rapides #}
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:1rem;margin-bottom:1.5rem">
     <div class="stat-card stat-blue">
         <div class="stat-icon"><i class="fas fa-building"></i></div>
         <div class="stat-body">
@@ -64,7 +64,6 @@
                 <th>Type</th>
                 <th>Contact</th>
                 <th class="text-right">Taux prise en charge</th>
-                <th class="text-right">Créances ({{ currency }})</th>
                 <th>Statut</th>
                 <th>Actions</th>
             </tr></thead>
@@ -90,11 +89,6 @@
                 <td style="text-align:right;font-weight:700;font-size:1.1rem;color:var(--csi-success)">
                     {{ p.tauxPriseEnCharge ?? 0 }}%
                 </td>
-                <td style="text-align:right">
-                    <strong style="color:{{ p.creances > 0 ? 'var(--csi-danger)' : 'var(--csi-success)' }}">
-                        {{ p.creances|default(0)|number_format(0,',',' ') }}
-                    </strong>
-                </td>
                 <td>
                     {% if p.actif %}
                     <span class="badge-status badge-success">Actif</span>
@@ -107,7 +101,7 @@
                         <a href="{{ path('app_partenaire_show', {id: p.id}) }}" class="btn btn-info btn-icon btn-sm" title="Voir détails">
                             <i class="fas fa-eye"></i>
                         </a>
-                        <a href="{{ path('app_partenaire_releve', {id: p.id}) }}" class="btn btn-primary btn-icon btn-sm" title="Relevé de compte">
+                        <a href="{{ path('app_partenaire_situation', {id: p.id}) }}" class="btn btn-primary btn-icon btn-sm" title="Situation période">
                             <i class="fas fa-file-invoice"></i>
                         </a>
                         {% if is_granted('ROLE_ADMIN') %}
@@ -119,7 +113,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="7" style="text-align:center;padding:2rem;color:#90A4AE">
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:#90A4AE">
                 <i class="fas fa-handshake fa-2x" style="display:block;margin-bottom:.5rem"></i>
                 Aucun partenaire enregistré
             </td></tr>
@@ -129,17 +123,17 @@
     </div>
 </div>
 
-{# Relevé périodique #}
+{# Relevé périodique — utilise la route situation existante #}
 <div class="card">
     <div class="card-header">
-        <h6><i class="fas fa-file-invoice-dollar"></i> Générer un relevé périodique</h6>
+        <h6><i class="fas fa-file-invoice-dollar"></i> Consulter la situation d'un partenaire</h6>
     </div>
     <div class="card-body">
-        <form method="GET" action="{{ path('app_partenaire_releve_global') }}" class="d-flex gap-3 align-items-end flex-wrap">
+        <form method="GET" id="form-situation" class="d-flex gap-3 align-items-end flex-wrap">
             <div>
                 <label class="form-label">Partenaire</label>
-                <select name="partenaire_id" class="form-select">
-                    <option value="">Tous les partenaires</option>
+                <select name="partenaire_id" id="select-partenaire" class="form-select" required>
+                    <option value="">— Choisir un partenaire —</option>
                     {% for p in partenaires %}
                     <option value="{{ p.id }}">{{ p.nom }}</option>
                     {% endfor %}
@@ -153,16 +147,8 @@
                 <label class="form-label">Au</label>
                 <input type="date" name="date_fin" class="form-control" value="{{ "now"|date('Y-m-d') }}">
             </div>
-            <div>
-                <label class="form-label">Format</label>
-                <select name="format" class="form-select">
-                    <option value="html">Aperçu HTML</option>
-                    <option value="pdf">PDF</option>
-                    <option value="excel">Excel</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-file-export"></i> Générer le relevé
+            <button type="submit" class="btn btn-primary" id="btn-voir-situation" disabled>
+                <i class="fas fa-search"></i> Voir la situation
             </button>
         </form>
     </div>
@@ -220,6 +206,13 @@
                         <label class="form-label">Description / Notes</label>
                         <textarea name="description" class="form-control" rows="2" placeholder="Conditions particulières, notes..."></textarea>
                     </div>
+                    <div>
+                        <label class="form-label">Statut</label>
+                        <select name="actif" class="form-select">
+                            <option value="1">Actif</option>
+                            <option value="0">Inactif</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -242,5 +235,23 @@ document.getElementById('search-partenaire')?.addEventListener('input', function
         row.style.display = (row.dataset.search || '').includes(q) ? '' : 'none';
     });
 });
+
+// Formulaire situation : activer le bouton quand partenaire sélectionné
+const selPart = document.getElementById('select-partenaire');
+const btnSit  = document.getElementById('btn-voir-situation');
+const formSit = document.getElementById('form-situation');
+if (selPart && btnSit && formSit) {
+    selPart.addEventListener('change', function() {
+        btnSit.disabled = !this.value;
+    });
+    formSit.addEventListener('submit', function(e) {
+        const id = selPart.value;
+        if (!id) { e.preventDefault(); return; }
+        e.preventDefault();
+        const dateDebut = formSit.querySelector('[name=date_debut]').value;
+        const dateFin   = formSit.querySelector('[name=date_fin]').value;
+        window.location.href = '/partenaires/' + id + '/situation?date_debut=' + dateDebut + '&date_fin=' + dateFin;
+    });
+}
 </script>
 {% endblock %}

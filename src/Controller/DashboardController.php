@@ -93,6 +93,7 @@ class DashboardController extends AbstractController
             'chartData'              => $chartData,
             'dernieresConsultations' => $dernieresConsultations,
             'prochainsRdv'           => $prochainsRdv,
+            'currency'               => $_ENV['CURRENCY'] ?? 'FCFA',
         ]);
     }
 

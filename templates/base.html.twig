@@ -133,7 +133,7 @@
 
         {# Footer utilisateur #}
         <div class="sidebar-footer">
-            <div class="sidebar-user" onclick="window.location.href='{{ path('app_medecin_profile') }}'">
+            <div class="sidebar-user" onclick="window.location.href='{{ is_granted('ROLE_MEDECIN') ? path('app_medecin_profile') : path('app_dashboard') }}'">
                 <div class="sidebar-user-avatar">
                     {{ app.user.prenom[0] is defined ? app.user.prenom[0] : 'U' }}{{ app.user.nom[0] is defined ? app.user.nom[0] : '' }}
                 </div>

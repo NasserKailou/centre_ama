@@ -18,22 +18,35 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class PartenaireController extends AbstractController
 {
     public function __construct(
-        private PartenaireRepository $partenaireRepo,
+        private PartenaireRepository     $partenaireRepo,
         private FactureGlobaleRepository $factureRepo,
-        private EntityManagerInterface $em,
-        private PaginatorInterface $paginator
+        private EntityManagerInterface   $em,
+        private PaginatorInterface       $paginator
     ) {}
 
     #[Route('/', name: 'app_partenaire_index')]
     public function index(Request $request): Response
     {
+        // Liste paginée
         $pagination = $this->paginator->paginate(
             $this->partenaireRepo->createQueryBuilder('p')->orderBy('p.nom', 'ASC'),
             $request->query->getInt('page', 1),
             20
         );
 
-        return $this->render('partenaire/index.html.twig', ['pagination' => $pagination]);
+        // Pour la vue on a aussi besoin de TOUTE la liste (pour les selects)
+        $partenaires = $this->partenaireRepo->findActifs();
+
+        // Stats globales
+        $stats    = $this->partenaireRepo->getStatsGlobales();
+        $currency = $_ENV['CURRENCY'] ?? 'FCFA';
+
+        return $this->render('partenaire/index.html.twig', [
+            'pagination'  => $pagination,
+            'partenaires' => $partenaires,
+            'stats'       => $stats,
+            'currency'    => $currency,
+        ]);
     }
 
     #[Route('/nouveau', name: 'app_partenaire_new', methods: ['GET', 'POST'])]
@@ -54,11 +67,11 @@ class PartenaireController extends AbstractController
         return $this->render('partenaire/new.html.twig', ['partenaire' => $partenaire]);
     }
 
-    #[Route('/{id}', name: 'app_partenaire_show')]
+    #[Route('/{id}', name: 'app_partenaire_show', requirements: ['id' => '\d+'])]
     public function show(Partenaire $partenaire, Request $request): Response
     {
         $dateDebut = $request->query->get('date_debut', date('Y-m-01'));
-        $dateFin = $request->query->get('date_fin', date('Y-m-t'));
+        $dateFin   = $request->query->get('date_fin',   date('Y-m-t'));
 
         $factures = $this->factureRepo->findByPartenairePeriode(
             $partenaire,
@@ -74,14 +87,15 @@ class PartenaireController extends AbstractController
 
         return $this->render('partenaire/show.html.twig', [
             'partenaire' => $partenaire,
-            'factures' => $factures,
-            'stats' => $stats,
+            'factures'   => $factures,
+            'stats'      => $stats,
             'date_debut' => $dateDebut,
-            'date_fin' => $dateFin,
+            'date_fin'   => $dateFin,
+            'currency'   => $_ENV['CURRENCY'] ?? 'FCFA',
         ]);
     }
 
-    #[Route('/{id}/modifier', name: 'app_partenaire_edit', methods: ['GET', 'POST'])]
+    #[Route('/{id}/modifier', name: 'app_partenaire_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     public function edit(Request $request, Partenaire $partenaire): Response
     {
         if ($request->isMethod('POST')) {
@@ -94,11 +108,11 @@ class PartenaireController extends AbstractController
         return $this->render('partenaire/edit.html.twig', ['partenaire' => $partenaire]);
     }
 
-    #[Route('/{id}/situation', name: 'app_partenaire_situation')]
+    #[Route('/{id}/situation', name: 'app_partenaire_situation', requirements: ['id' => '\d+'])]
     public function situation(Partenaire $partenaire, Request $request): Response
     {
         $dateDebut = $request->query->get('date_debut', date('Y-m-01'));
-        $dateFin = $request->query->get('date_fin', date('Y-m-t'));
+        $dateFin   = $request->query->get('date_fin',   date('Y-m-t'));
 
         $factures = $this->factureRepo->findByPartenairePeriode(
             $partenaire,
@@ -114,22 +128,28 @@ class PartenaireController extends AbstractController
 
         return $this->render('partenaire/situation.html.twig', [
             'partenaire' => $partenaire,
-            'factures' => $factures,
-            'stats' => $stats,
+            'factures'   => $factures,
+            'stats'      => $stats,
             'date_debut' => $dateDebut,
-            'date_fin' => $dateFin,
+            'date_fin'   => $dateFin,
+            'currency'   => $_ENV['CURRENCY'] ?? 'FCFA',
         ]);
     }
 
+    // ─── helper ───────────────────────────────────────────────────────────
     private function hydratePartenaire(Partenaire $partenaire, array $data): void
     {
-        if (!empty($data['nom'])) $partenaire->setNom($data['nom']);
-        if (!empty($data['code'])) $partenaire->setCode($data['code']);
-        if (isset($data['contact_nom'])) $partenaire->setContactNom($data['contact_nom'] ?: null);
-        if (isset($data['telephone'])) $partenaire->setTelephone($data['telephone'] ?: null);
-        if (isset($data['email'])) $partenaire->setEmail($data['email'] ?: null);
-        if (isset($data['adresse'])) $partenaire->setAdresse($data['adresse'] ?: null);
-        if (isset($data['taux_couverture'])) $partenaire->setTauxCouverture($data['taux_couverture']);
+        if (!empty($data['nom']))  $partenaire->setNom($data['nom']);
+        if (!empty($data['type'])) $partenaire->setType($data['type']);
+        if (isset($data['contact']))          $partenaire->setContact($data['contact'] ?: null);
+        if (isset($data['telephone']))        $partenaire->setTelephone($data['telephone'] ?: null);
+        if (isset($data['email']))            $partenaire->setEmail($data['email'] ?: null);
+        if (isset($data['adresse']))          $partenaire->setAdresse($data['adresse'] ?: null);
+        if (isset($data['description']))      $partenaire->setDescription($data['description'] ?: null);
+        if (isset($data['numero_contrat']))   $partenaire->setNumeroContrat($data['numero_contrat'] ?: null);
+        if (isset($data['taux_prise_en_charge'])) {
+            $partenaire->setTauxPriseEnCharge((float)$data['taux_prise_en_charge']);
+        }
         $partenaire->setActif(isset($data['actif']) && $data['actif'] === '1');
     }
 }

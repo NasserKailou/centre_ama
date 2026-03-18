@@ -110,5 +110,52 @@ class ProduitPharmaceutique
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
 
+    // ─── Alias et helpers ─────────────────────────────────────────────────
+
+    /** Alias de getDesignation() pour la compatibilité */
+    public function getNom(): string { return $this->designation; }
+
+    /** Alias de getStockDisponible() */
+    public function getStockActuel(): int { return $this->stockDisponible; }
+
+    /** Alias de getPrixVente() */
+    public function getPrix(): float { return $this->prixVente; }
+
+    /** Nom complet avec DCI et dosage */
+    public function getNomComplet(): string
+    {
+        $parts = [$this->designation];
+        if ($this->dci && $this->dci !== $this->designation) $parts[] = '(' . $this->dci . ')';
+        if ($this->dosage) $parts[] = $this->dosage;
+        return implode(' ', $parts);
+    }
+
+    /** Vérifie si le stock est suffisant */
+    public function isDisponible(int $quantite = 1): bool
+    {
+        return $this->stockDisponible >= $quantite;
+    }
+
+    /** Décrémente le stock */
+    public function decrementerStock(int $quantite): void
+    {
+        $this->stockDisponible = max(0, $this->stockDisponible - $quantite);
+    }
+
+    /** Incrémente le stock */
+    public function incrementerStock(int $quantite): void
+    {
+        $this->stockDisponible += $quantite;
+    }
+
+    /** Retourne le statut du stock */
+    public function getStatutStock(): string
+    {
+        if ($this->stockDisponible <= 0) return 'rupture';
+        if ($this->stockDisponible <= $this->stockMinimum) return 'critique';
+        return 'normal';
+    }
+
     public function __toString(): string { return $this->designation; }
 }
+

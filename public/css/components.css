@@ -1,289 +1,206 @@
 /* ============================================================
-   CSI — Styles spécifiques aux pages
+   CSI — Composants spéciaux  |  v2.0
    ============================================================ */
 
-/* ── Dashboard charts ── */
-.chart-wrapper {
-  position: relative;
-  height: 260px;
+/* ── Autocomplete patient ── */
+.autocomplete-dropdown {
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0; right:0;
+  background:#fff;
+  border:1.5px solid var(--csi-primary);
+  border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);
+  max-height:260px;
+  overflow-y:auto;
+  z-index:3000;
+  list-style:none;
 }
+.autocomplete-dropdown li {
+  padding:.65rem 1rem;
+  cursor:pointer;
+  font-size:.85rem;
+  border-bottom:1px solid #F0F4F8;
+  transition:background var(--transition);
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+}
+.autocomplete-dropdown li:last-child { border-bottom:none; }
+.autocomplete-dropdown li:hover,
+.autocomplete-dropdown li.active { background:var(--csi-primary-light); color:var(--csi-primary); }
+.autocomplete-avatar {
+  width:32px; height:32px;
+  border-radius:50%;
+  background:var(--csi-primary-light);
+  display:flex; align-items:center; justify-content:center;
+  font-size:.75rem; font-weight:700; color:var(--csi-primary);
+  flex-shrink:0;
+}
+.autocomplete-name { font-weight:600; }
+.autocomplete-sub  { font-size:.72rem; color:var(--text-muted); }
 
-/* ── Caisse / Facture ── */
-.facture-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid var(--border-color);
-  margin-bottom: 1.5rem;
-}
-.facture-logo {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--csi-primary);
-}
-.facture-numero {
-  font-size: 1rem;
-  font-weight: 700;
-  text-align: right;
-}
-.facture-numero span {
-  display: block;
-  font-size: 1.5rem;
-  color: var(--csi-primary);
-}
-
-.facture-table tfoot tr td {
-  font-weight: 700;
-  background: #F8FAFC;
-}
-.facture-total-row td {
-  font-size: 1.05rem;
-  color: var(--csi-primary);
-  border-top: 2px solid var(--csi-primary) !important;
-}
-
-/* ── Patient ─ Dossier ── */
-.dossier-section {
-  border-left: 3px solid var(--csi-primary);
-  padding-left: 1rem;
-  margin-bottom: 1rem;
-}
-.dossier-section-title {
-  font-size: .8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  color: var(--csi-primary);
-  margin-bottom: .5rem;
-}
-
-/* ── Pharmacie ─ Stock ── */
-.stock-bar {
-  height: 6px;
-  background: #ECEFF1;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-top: .3rem;
-}
-.stock-bar-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width .4s ease;
-}
-.stock-bar-fill.ok      { background: var(--csi-success); }
-.stock-bar-fill.warning { background: var(--csi-warning); }
-.stock-bar-fill.danger  { background: var(--csi-danger); }
-
-/* ── RDV ─ Calendrier slots ── */
-.rdv-slot {
-  padding: .5rem .75rem;
-  border-radius: 8px;
-  border-left: 3px solid var(--csi-primary);
-  background: var(--csi-primary-light);
-  margin-bottom: .4rem;
-  font-size: .84rem;
-}
-.rdv-slot.urgent  { border-color: var(--csi-danger); background: #FCE4EC; }
-.rdv-slot.done    { border-color: var(--csi-success); background: #E8F5E9; opacity: .7; }
-.rdv-slot.pending { border-color: var(--csi-warning); background: #FFF3E0; }
-
-/* ── Timeline consultations ── */
-.timeline {
-  position: relative;
-  padding-left: 2rem;
-}
-.timeline::before {
-  content: '';
-  position: absolute;
-  left: .65rem; top: 0; bottom: 0;
-  width: 2px;
-  background: var(--border-color);
-}
-.timeline-item {
-  position: relative;
-  margin-bottom: 1.5rem;
-}
-.timeline-dot {
-  position: absolute;
-  left: -1.65rem; top: .3rem;
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  background: var(--csi-primary);
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 2px var(--csi-primary-light);
-}
-.timeline-date {
-  font-size: .72rem;
-  color: var(--text-muted);
-  font-weight: 600;
-  margin-bottom: .3rem;
-}
-.timeline-content {
-  background: #F8FAFC;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: .85rem 1rem;
-}
-.timeline-content:hover { border-color: var(--csi-primary); }
-
-/* ── Rapport ─ Charts container ── */
-.report-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1rem;
-}
-
-/* ── Login ── */
-.login-wrapper {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #0F1B35 0%, #1A2F5A 50%, #1A73E8 100%);
-  padding: 1.5rem;
-}
-.login-card {
-  background: #fff;
-  border-radius: 18px;
-  padding: 2.5rem;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: 0 25px 60px rgba(0,0,0,.3);
-}
-.login-logo {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-.login-logo-icon {
-  width: 72px; height: 72px;
-  background: linear-gradient(135deg, var(--csi-primary), #0F52BA);
-  border-radius: 20px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.8rem; color: #fff;
-  margin: 0 auto .75rem;
-  box-shadow: 0 8px 25px rgba(26,115,232,.35);
-}
-.login-logo-title {
-  font-size: 1.2rem; font-weight: 800; color: var(--text-primary);
-}
-.login-logo-sub {
-  font-size: .8rem; color: var(--text-muted);
-}
-.login-form .form-control {
-  padding: .65rem 1rem;
-  font-size: .92rem;
-}
-.login-submit {
-  width: 100%;
-  padding: .75rem;
-  font-size: .95rem;
-  margin-top: .5rem;
-}
-
-/* ── Reçu impression ── */
+/* ── Impression / Reçu ── */
 @media print {
-  .recu-print { max-width: 80mm; margin: 0 auto; font-size: 11px; }
-  .recu-print .no-print { display: none; }
+  .sidebar, .topbar, .breadcrumb-bar, .no-print { display:none !important; }
+  .main-wrapper { margin-left:0 !important; }
+  .page-content { padding:0 !important; }
+  .card { box-shadow:none !important; border:1px solid #ddd !important; }
 }
 
-/* ── Animations ── */
-.fade-in {
-  animation: fadeIn .3s ease;
+/* ── Alertes stock pharmacie ── */
+.stock-badge {
+  display:inline-flex; align-items:center; gap:.3rem;
+  padding:.2rem .6rem; border-radius:20px;
+  font-size:.7rem; font-weight:700;
 }
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+.stock-normal   { background:#E6F9F3; color:#00875A; }
+.stock-critique { background:#FFF8E1; color:#E65100; }
+.stock-rupture  { background:#FFEBEE; color:#C62828; }
+
+/* ── Loader inline ── */
+.spinner {
+  display:inline-block;
+  width:18px; height:18px;
+  border:3px solid rgba(26,115,232,.2);
+  border-top-color:var(--csi-primary);
+  border-radius:50%;
+  animation:spin .6s linear infinite;
+  vertical-align:middle;
 }
 
-.slide-in {
-  animation: slideInLeft .3s ease;
+/* ── Card stat avec bordure gauche ── */
+.card-stat-bordered {
+  border-left:4px solid var(--csi-primary);
 }
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-20px); }
-  to   { opacity: 1; transform: translateX(0); }
+.card-stat-bordered.success { border-left-color:var(--csi-success); }
+.card-stat-bordered.warning { border-left-color:var(--csi-warning); }
+.card-stat-bordered.danger  { border-left-color:var(--csi-danger);  }
+
+/* ── Table hover highlight ── */
+.table-hover tbody tr:hover td {
+  background:var(--csi-primary-light) !important;
 }
 
-/* ── Tooltip simple ── */
-[data-tooltip] {
-  position: relative;
+/* ── Info box ── */
+.info-box {
+  background:var(--csi-primary-light);
+  border:1px solid rgba(26,115,232,.2);
+  border-radius:10px;
+  padding:.85rem 1rem;
+  font-size:.83rem;
+  color:var(--csi-primary-dark);
+  display:flex;
+  align-items:flex-start;
+  gap:.65rem;
+  margin-bottom:1rem;
 }
-[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,.8);
-  color: #fff; font-size: .72rem;
-  padding: .3rem .6rem; border-radius: 6px;
-  white-space: nowrap; pointer-events: none;
-  opacity: 0; transition: opacity .2s;
-}
-[data-tooltip]:hover::after { opacity: 1; }
+.info-box i { margin-top:.1rem; flex-shrink:0; }
 
-/* ── Notification panel ── */
-.notif-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 320px;
-  background: #fff;
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  box-shadow: 0 8px 30px rgba(0,0,0,.12);
-  z-index: 1100;
-  overflow: hidden;
+/* ── Filtre rapide ── */
+.filter-chip {
+  display:inline-flex; align-items:center; gap:.35rem;
+  padding:.3rem .8rem;
+  border-radius:20px;
+  font-size:.78rem; font-weight:600;
+  cursor:pointer;
+  border:1.5px solid var(--border-color);
+  background:#fff;
+  color:var(--text-secondary);
+  transition:all var(--transition);
+  text-decoration:none;
 }
-.notif-item {
-  padding: .75rem 1rem;
-  border-bottom: 1px solid #F0F4F8;
-  display: flex; gap: .75rem;
-  cursor: pointer; transition: background var(--transition);
-  font-size: .84rem;
-}
-.notif-item:hover { background: #F8FAFC; }
-.notif-item:last-child { border-bottom: none; }
-.notif-icon {
-  width: 36px; height: 36px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; font-size: .9rem;
+.filter-chip:hover,
+.filter-chip.active {
+  background:var(--csi-primary-light);
+  color:var(--csi-primary);
+  border-color:var(--csi-primary);
+  text-decoration:none;
 }
 
-/* ── Tag input ── */
-.tag {
-  display: inline-flex; align-items: center; gap: .3rem;
-  padding: .2rem .55rem;
-  background: var(--csi-primary-light);
-  color: var(--csi-primary);
-  border-radius: 20px;
-  font-size: .78rem; font-weight: 600;
-  cursor: default;
+/* ── Divider ── */
+.divider {
+  border:none;
+  border-top:1px solid var(--border-color);
+  margin:1rem 0;
 }
-.tag-remove {
-  cursor: pointer; opacity: .6; font-size: .75em;
-}
-.tag-remove:hover { opacity: 1; }
 
-/* ── Step wizard ── */
-.steps {
-  display: flex;
-  align-items: center;
-  margin-bottom: 2rem;
+/* ── Avatar letter ── */
+.avatar {
+  display:inline-flex; align-items:center; justify-content:center;
+  border-radius:50%;
+  font-weight:700; color:#fff;
+  flex-shrink:0;
+  text-transform:uppercase;
 }
-.step {
-  display: flex; align-items: center; gap: .6rem;
-  font-size: .82rem; font-weight: 600; color: var(--text-muted);
-  flex: 1;
+.avatar-sm { width:30px; height:30px; font-size:.72rem; }
+.avatar-md { width:38px; height:38px; font-size:.85rem; }
+.avatar-lg { width:50px; height:50px; font-size:1rem; }
+.avatar-primary { background:var(--csi-primary); }
+.avatar-success { background:var(--csi-success); }
+.avatar-warning { background:var(--csi-warning); }
+
+/* ── Tooltips légers ── */
+[data-tip] { position:relative; }
+[data-tip]::after {
+  content:attr(data-tip);
+  position:absolute;
+  bottom:calc(100% + 6px);
+  left:50%;
+  transform:translateX(-50%);
+  background:#1A202C;
+  color:#fff;
+  padding:.25rem .6rem;
+  border-radius:5px;
+  font-size:.72rem;
+  white-space:nowrap;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .2s;
+  z-index:9000;
 }
-.step-num {
-  width: 30px; height: 30px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  border: 2px solid var(--border-color);
-  font-weight: 700; font-size: .82rem; flex-shrink: 0;
-  background: #fff;
+[data-tip]:hover::after { opacity:1; }
+
+/* ── Skeleton loading ── */
+.skeleton {
+  background:linear-gradient(90deg, #F0F4F8 25%, #E2E8F0 50%, #F0F4F8 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s infinite;
+  border-radius:6px;
 }
-.step.active { color: var(--csi-primary); }
-.step.active .step-num { border-color: var(--csi-primary); background: var(--csi-primary); color: #fff; }
-.step.done   { color: var(--csi-success); }
-.step.done   .step-num { border-color: var(--csi-success); background: var(--csi-success); color: #fff; }
-.step-divider { flex: 1; height: 2px; background: var(--border-color); margin: 0 .5rem; max-width: 60px; }
+@keyframes shimmer {
+  from { background-position:200% 0; }
+  to   { background-position:-200% 0; }
+}
+
+/* ── Empty state ── */
+.empty-state {
+  text-align:center;
+  padding:3rem 1rem;
+  color:var(--text-muted);
+}
+.empty-state i {
+  font-size:2.5rem;
+  display:block;
+  margin-bottom:.75rem;
+  opacity:.5;
+}
+.empty-state p { font-size:.9rem; margin-bottom:1rem; }
+
+/* ── Number format ── */
+.money {
+  font-variant-numeric:tabular-nums;
+  font-weight:700;
+  letter-spacing:-.01em;
+}
+.money-positive { color:var(--csi-success); }
+.money-negative { color:var(--csi-danger); }
+
+/* ── Responsive table wrappers ── */
+.table-fixed { table-layout:fixed; }
+.text-nowrap { white-space:nowrap; }
+.text-ellipsis {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
