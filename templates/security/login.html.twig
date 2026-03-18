@@ -152,13 +152,13 @@
 
             <form method="post" action="{{ path('app_login') }}">
                 <div class="mb-3">
-                    <label class="form-label">Nom d'utilisateur</label>
+                    <label class="form-label">Adresse email</label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-user"></i></span>
-                        <input type="text" name="_username" class="form-control" 
+                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                        <input type="email" name="email" class="form-control" 
                                value="{{ last_username }}" 
-                               placeholder="Votre identifiant" 
-                               autocomplete="username" autofocus required>
+                               placeholder="votre@email.com" 
+                               autocomplete="email" autofocus required>
                     </div>
                 </div>
 
@@ -166,7 +166,7 @@
                     <label class="form-label">Mot de passe</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                        <input type="password" name="_password" id="password" class="form-control" 
+                        <input type="password" name="password" id="password" class="form-control" 
                                placeholder="••••••••" 
                                autocomplete="current-password" required>
                         <button type="button" class="btn btn-outline-secondary border-start-0" 
@@ -179,6 +179,8 @@
 
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
+                {# Comptes de test — retirer en production #}
+
                 <button type="submit" class="btn-login">
                     <i class="fas fa-sign-in-alt me-2"></i>Se Connecter
                 </button>
@@ -186,7 +188,24 @@
 
             <div class="info-box">
                 <i class="fas fa-info-circle me-2"></i>
-                <strong>Première connexion:</strong> Contactez l'administrateur pour obtenir vos identifiants.
+                <strong>Comptes de test disponibles :</strong><br>
+                <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
+                    <span style="cursor:pointer" onclick="fillLogin('admin@csi.ne','Admin@2024')">
+                        🔴 <strong>Admin</strong> : admin@csi.ne / Admin@2024
+                    </span>
+                    <span style="cursor:pointer" onclick="fillLogin('dr.kollo@csi.ne','Medecin@2024')">
+                        🟢 <strong>Médecin</strong> : dr.kollo@csi.ne / Medecin@2024
+                    </span>
+                    <span style="cursor:pointer" onclick="fillLogin('caisse@csi.ne','Caissier@2024')">
+                        🟡 <strong>Caissier</strong> : caisse@csi.ne / Caissier@2024
+                    </span>
+                    <span style="cursor:pointer" onclick="fillLogin('assistant@csi.ne','Assistant@2024')">
+                        🔵 <strong>Assistant</strong> : assistant@csi.ne / Assistant@2024
+                    </span>
+                </div>
+                <div style="margin-top:8px;font-size:11px;color:#64748b">
+                    <i class="fas fa-hand-pointer"></i> Cliquez sur un compte pour le remplir automatiquement
+                </div>
             </div>
         </div>
 
@@ -208,6 +227,12 @@
             pwd.type = 'password';
             icon.classList.replace('fa-eye-slash', 'fa-eye');
         }
+    }
+
+    function fillLogin(email, password) {
+        document.querySelector('input[name="email"]').value = email;
+        document.getElementById('password').value = password;
+        document.querySelector('input[name="email"]').focus();
     }
     </script>
 </body>
