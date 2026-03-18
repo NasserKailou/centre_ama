@@ -27,9 +27,10 @@ class AdminController extends AbstractController
         private PaginatorInterface $paginator
     ) {}
 
-    // ==================== GESTION UTILISATEURS ====================
+    // =====================================================================
+    // PAGE PRINCIPALE ADMIN
+    // =====================================================================
 
-    // ── Page principale admin ──────────────────────────────────────
     #[Route('', name: 'app_admin_index')]
     public function index(): Response
     {
@@ -39,7 +40,13 @@ class AdminController extends AbstractController
         ]);
     }
 
-    // ── Créer utilisateur (POST depuis modal) ─────────────────────
+    // =====================================================================
+    // GESTION UTILISATEURS
+    // =====================================================================
+
+    /**
+     * Créer un utilisateur (POST depuis le modal de la page admin/index)
+     */
     #[Route('/user/create', name: 'app_admin_create_user', methods: ['POST'])]
     public function createUser(Request $request): Response
     {
@@ -48,12 +55,12 @@ class AdminController extends AbstractController
             return $this->redirectToRoute('app_admin_index');
         }
 
-        $data = $request->request->all();
-        $password  = $data['password'] ?? '';
-        $confirm   = $data['password_confirm'] ?? '';
+        $data    = $request->request->all();
+        $password = $data['password'] ?? '';
+        $confirm  = $data['password_confirm'] ?? '';
 
         if ($password !== $confirm || strlen($password) < 8) {
-            $this->addFlash('danger', 'Les mots de passe ne correspondent pas ou sont trop courts.');
+            $this->addFlash('danger', 'Les mots de passe ne correspondent pas ou sont trop courts (min. 8 caractères).');
             return $this->redirectToRoute('app_admin_index');
         }
 
@@ -68,7 +75,9 @@ class AdminController extends AbstractController
         return $this->redirectToRoute('app_admin_index');
     }
 
-    // ── Modifier utilisateur (POST depuis modal) ──────────────────
+    /**
+     * Modifier un utilisateur (POST depuis le modal de la page admin/index)
+     */
     #[Route('/user/{id}/edit', name: 'app_admin_edit_user', methods: ['POST'])]
     public function editUserModal(Request $request, User $user): Response
     {
@@ -90,134 +99,82 @@ class AdminController extends AbstractController
         return $this->redirectToRoute('app_admin_index');
     }
 
-    // ── Toggle actif/inactif ──────────────────────────────────────
+    /**
+     * Activer / Désactiver un utilisateur
+     */
     #[Route('/user/{id}/toggle', name: 'app_admin_toggle_user', methods: ['POST'])]
-    public function toggleUser(User $user): Response
+    public function toggleUser(Request $request, User $user): Response
     {
-        if ($user === $this->getUser()) {
-            $this->addFlash('danger', 'Impossible de modifier votre propre statut.');
-            return $this->redirectToRoute('app_admin_index');
-        }
-        $user->setActif(!$user->isActif());
-        $this->em->flush();
-        $this->addFlash('success', 'Statut utilisateur modifié.');
-        return $this->redirectToRoute('app_admin_index');
-    }
-
-    // ── Réinitialiser le mot de passe ─────────────────────────────
-    #[Route('/user/{id}/reset-password', name: 'app_admin_reset_password', methods: ['POST'])]
-    public function resetPassword(User $user): Response
-    {
-        if (!$this->isCsrfTokenValid('reset_pwd_' . $user->getId(), $_POST['_token'] ?? '')) {
+        if (!$this->isCsrfTokenValid('toggle_user_' . $user->getId(), $request->request->get('_token'))) {
             $this->addFlash('danger', 'Token CSRF invalide.');
             return $this->redirectToRoute('app_admin_index');
         }
 
-        // Générer un mot de passe temporaire
+        if ($user === $this->getUser()) {
+            $this->addFlash('danger', 'Impossible de modifier votre propre statut.');
+            return $this->redirectToRoute('app_admin_index');
+        }
+
+        $user->setActif(!$user->isActif());
+        $this->em->flush();
+
+        $statut = $user->isActif() ? 'activé' : 'désactivé';
+        $this->addFlash('success', "Compte de {$user->getPrenom()} {$user->getNom()} {$statut}.");
+        return $this->redirectToRoute('app_admin_index');
+    }
+
+    /**
+     * Réinitialiser le mot de passe d'un utilisateur
+     */
+    #[Route('/user/{id}/reset-password', name: 'app_admin_reset_password', methods: ['POST'])]
+    public function resetPassword(Request $request, User $user): Response
+    {
+        if (!$this->isCsrfTokenValid('reset_pwd_' . $user->getId(), $request->request->get('_token'))) {
+            $this->addFlash('danger', 'Token CSRF invalide.');
+            return $this->redirectToRoute('app_admin_index');
+        }
+
         $tempPwd = 'CSI@' . random_int(10000, 99999);
         $user->setPassword($this->passwordHasher->hashPassword($user, $tempPwd));
         $this->em->flush();
 
-        $this->addFlash('success', "Mot de passe de {$user->getPrenom()} {$user->getNom()} réinitialisé : <strong>{$tempPwd}</strong>");
+        $this->addFlash('success', "Mot de passe de {$user->getPrenom()} {$user->getNom()} réinitialisé. Nouveau MDP : <strong>{$tempPwd}</strong>");
         return $this->redirectToRoute('app_admin_index');
     }
 
-    // ── Liste utilisateurs (pagination) ───────────────────────────
-    #[Route('/utilisateurs', name: 'app_admin_users')]
-    public function users(Request $request): Response
-    {
-        $pagination = $this->paginator->paginate(
-            $this->userRepo->createQueryBuilder('u')->orderBy('u.nom', 'ASC'),
-            $request->query->getInt('page', 1),
-            20
-        );
-        return $this->render('admin/users.html.twig', ['pagination' => $pagination]);
-    }
-
-    #[Route('/utilisateurs/nouveau', name: 'app_admin_user_new', methods: ['GET', 'POST'])]
-    public function newUser(Request $request): Response
-    {
-        $user = new User();
-
-        if ($request->isMethod('POST')) {
-            $data = $request->request->all();
-            $this->hydrateUser($user, $data);
-
-            $plainPassword = $data['password'] ?? '';
-            if (strlen($plainPassword) >= 6) {
-                $hashed = $this->passwordHasher->hashPassword($user, $plainPassword);
-                $user->setPassword($hashed);
-                $this->em->persist($user);
-                $this->em->flush();
-                $this->addFlash('success', "Utilisateur {$user->getNomComplet()} créé avec succès.");
-                return $this->redirectToRoute('app_admin_users');
-            } else {
-                $this->addFlash('error', 'Le mot de passe doit contenir au moins 6 caractères.');
-            }
-        }
-
-        return $this->render('admin/user_new.html.twig', ['user' => $user]);
-    }
-
-    #[Route('/utilisateurs/{id}/modifier', name: 'app_admin_user_edit', methods: ['GET', 'POST'])]
-    public function editUser(Request $request, User $user): Response
-    {
-        if ($request->isMethod('POST')) {
-            $data = $request->request->all();
-            $this->hydrateUser($user, $data);
-
-            if (!empty($data['password']) && strlen($data['password']) >= 6) {
-                $hashed = $this->passwordHasher->hashPassword($user, $data['password']);
-                $user->setPassword($hashed);
-            }
-
-            $this->em->flush();
-            $this->addFlash('success', 'Utilisateur mis à jour.');
-            return $this->redirectToRoute('app_admin_users');
-        }
-
-        return $this->render('admin/user_edit.html.twig', ['user' => $user]);
-    }
-
-    #[Route('/utilisateurs/{id}/toggle', name: 'app_admin_user_toggle', methods: ['POST'])]
-    public function toggleUser(User $user): Response
-    {
-        if ($user === $this->getUser()) {
-            $this->addFlash('error', 'Vous ne pouvez pas désactiver votre propre compte.');
-            return $this->redirectToRoute('app_admin_users');
-        }
-        $user->setActif(!$user->isActif());
-        $this->em->flush();
-        $this->addFlash('success', 'Statut utilisateur modifié.');
-        return $this->redirectToRoute('app_admin_users');
-    }
-
-    // ==================== GESTION ACTES MEDICAUX ====================
+    // =====================================================================
+    // GESTION ACTES MÉDICAUX
+    // =====================================================================
 
     #[Route('/actes-medicaux', name: 'app_admin_actes')]
     public function actesMedicaux(Request $request): Response
     {
         $search = $request->query->get('search', '');
-        $type = $request->query->get('type', '');
+        $categorie = $request->query->get('categorie', '');
 
         $qb = $this->acteRepo->createQueryBuilder('a')
             ->orderBy('a.categorie', 'ASC')
-            ->addOrderBy('a.libelle', 'ASC');
+            ->addOrderBy('a.designation', 'ASC');
 
         if ($search) {
-            $qb->andWhere('a.libelle LIKE :search')->setParameter('search', "%$search%");
+            $qb->andWhere('a.designation LIKE :search')
+               ->setParameter('search', "%{$search}%");
         }
-        if ($type) {
-            $qb->andWhere('a.type = :type')->setParameter('type', $type);
+        if ($categorie) {
+            $qb->andWhere('a.categorie = :categorie')
+               ->setParameter('categorie', $categorie);
         }
 
-        $pagination = $this->paginator->paginate($qb, $request->query->getInt('page', 1), 25);
+        $pagination = $this->paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            25
+        );
 
         return $this->render('admin/actes.html.twig', [
-            'pagination' => $pagination,
-            'search' => $search,
-            'type_filter' => $type,
-            'types' => ActeMedical::TYPES,
+            'pagination'   => $pagination,
+            'search'       => $search,
+            'cat_filter'   => $categorie,
         ]);
     }
 
@@ -231,15 +188,11 @@ class AdminController extends AbstractController
             $this->hydrateActe($acte, $data);
             $this->em->persist($acte);
             $this->em->flush();
-            $this->addFlash('success', "Acte '{$acte->getLibelle()}' créé.");
+            $this->addFlash('success', "Acte '{$acte->getDesignation()}' créé.");
             return $this->redirectToRoute('app_admin_actes');
         }
 
-        return $this->render('admin/acte_new.html.twig', [
-            'acte' => $acte,
-            'types' => ActeMedical::TYPES,
-            'categories' => ActeMedical::CATEGORIES,
-        ]);
+        return $this->render('admin/acte_new.html.twig', ['acte' => $acte]);
     }
 
     #[Route('/actes-medicaux/{id}/modifier', name: 'app_admin_acte_edit', methods: ['GET', 'POST'])]
@@ -252,33 +205,30 @@ class AdminController extends AbstractController
             return $this->redirectToRoute('app_admin_actes');
         }
 
-        return $this->render('admin/acte_edit.html.twig', [
-            'acte' => $acte,
-            'types' => ActeMedical::TYPES,
-            'categories' => ActeMedical::CATEGORIES,
-        ]);
+        return $this->render('admin/acte_edit.html.twig', ['acte' => $acte]);
     }
+
+    // =====================================================================
+    // MÉTHODES PRIVÉES
+    // =====================================================================
 
     private function hydrateUser(User $user, array $data): void
     {
-        if (!empty($data['nom'])) $user->setNom($data['nom']);
-        if (!empty($data['prenom'])) $user->setPrenom($data['prenom']);
-        if (!empty($data['username'])) $user->setUsername($data['username']);
-        if (isset($data['telephone'])) $user->setTelephone($data['telephone'] ?: null);
-        if (isset($data['email'])) $user->setEmail($data['email'] ?: null);
+        if (!empty($data['nom']))       $user->setNom($data['nom']);
+        if (!empty($data['prenom']))    $user->setPrenom($data['prenom']);
+        if (isset($data['email']))      $user->setEmail($data['email'] ?: null);
+        if (isset($data['telephone']))  $user->setTelephone($data['telephone'] ?: null);
         if (isset($data['specialite'])) $user->setSpecialite($data['specialite'] ?: null);
-        if (!empty($data['role'])) $user->setRoles([$data['role']]);
-        $user->setActif(isset($data['actif']) && $data['actif'] === '1');
+        if (!empty($data['role']))      $user->setRoles([$data['role']]);
     }
 
     private function hydrateActe(ActeMedical $acte, array $data): void
     {
-        if (!empty($data['libelle'])) $acte->setLibelle($data['libelle']);
-        if (!empty($data['type'])) $acte->setType($data['type']);
-        if (isset($data['categorie'])) $acte->setCategorie($data['categorie'] ?: null);
-        if (!empty($data['prix_normal'])) $acte->setPrixNormal($data['prix_normal']);
-        if (isset($data['prix_prise_en_charge'])) $acte->setPrixPriseEnCharge($data['prix_prise_en_charge'] ?: null);
-        if (isset($data['description'])) $acte->setDescription($data['description'] ?: null);
+        if (!empty($data['designation']))       $acte->setDesignation($data['designation']);
+        if (isset($data['code']))               $acte->setCode($data['code'] ?: null);
+        if (isset($data['categorie']))          $acte->setCategorie($data['categorie'] ?: null);
+        if (isset($data['prix_normal']))        $acte->setPrixNormal((float)$data['prix_normal']);
+        if (isset($data['prix_pris_en_charge'])) $acte->setPrixPrisEnCharge((float)$data['prix_pris_en_charge']);
         $acte->setActif(isset($data['actif']) && $data['actif'] === '1');
     }
 }
