@@ -234,7 +234,7 @@
                                     {% for presc in consult.prescriptionsExamen %}
                                     <span class="badge" style="background:{{ presc.statut == 'resultat_saisi' ? '#d1fae5' : '#fef9c3' }};color:{{ presc.statut == 'resultat_saisi' ? '#065f46' : '#713f12' }};border:1px solid {{ presc.statut == 'resultat_saisi' ? '#6ee7b7' : '#fde68a' }}; font-size:11px;">
                                         <i class="fas fa-{{ presc.statut == 'resultat_saisi' ? 'check' : 'clock' }} me-1"></i>
-                                        {{ presc.acteMedical.libelle }}
+                                        {{ presc.acteMedical.designation }}
                                     </span>
                                     {% endfor %}
                                 </div>

@@ -55,7 +55,8 @@ class ConsultationController extends AbstractController
     public function new(Request $request): Response
     {
         $consultation = new Consultation();
-        $actesExamens = $this->acteRepo->findBy(['actif' => true, 'type' => ['examen', 'soin']], ['libelle' => 'ASC']);
+        // 'type' n'est plus un champ → utiliser 'categorie', 'libelle' → 'designation'
+        $actesExamens = $this->acteRepo->findByCategories(['examen', 'soin']);
 
         if ($request->isMethod('POST')) {
             $data = $request->request->all();
@@ -66,19 +67,29 @@ class ConsultationController extends AbstractController
             } else {
                 $consultation->setPatient($patient);
                 $consultation->setMedecin($this->getUser());
+                $consultation->setDateHeure(new \DateTime());
                 $consultation->setMotif($data['motif'] ?? 'Consultation');
                 $consultation->setObservations($data['observations'] ?? null);
                 $consultation->setDiagnostic($data['diagnostic'] ?? null);
                 $consultation->setTraitement($data['traitement'] ?? null);
-                $consultation->setOrdonnance($data['ordonnance'] ?? null);
+                // setOrdonnance n'existe pas → on met l'ordonnance dans traitement si besoin
+                if (!empty($data['ordonnance'])) {
+                    $existing = $consultation->getTraitement() ?? '';
+                    $consultation->setTraitement($existing . "\nOrdonnance : " . $data['ordonnance']);
+                }
 
                 // Constantes vitales
-                $consultation->setPoids($data['poids'] ?? null);
-                $consultation->setTaille($data['taille'] ?? null);
-                $consultation->setTensionArterielle($data['tension_arterielle'] ?? null);
-                $consultation->setTemperature($data['temperature'] ?? null);
-                $consultation->setFrequenceCardiaque($data['frequence_cardiaque'] ?? null);
-                $consultation->setSaturationOxygene($data['saturation_oxygene'] ?? null);
+                $consultation->setPoids(!empty($data['poids']) ? (float)$data['poids'] : null);
+                $consultation->setTaille(!empty($data['taille']) ? (float)$data['taille'] : null);
+                // setTensionArterielle n'existe pas → utiliser setTension
+                $consultation->setTension($data['tension_arterielle'] ?? $data['tension'] ?? null);
+                $consultation->setTemperature(!empty($data['temperature']) ? (float)$data['temperature'] : null);
+                $consultation->setFrequenceCardiaque(!empty($data['frequence_cardiaque']) ? (int)$data['frequence_cardiaque'] : null);
+                // setSaturationOxygene n'existe pas dans l'entité → ignorer ou stocker dans observations
+                if (!empty($data['saturation_oxygene'])) {
+                    $obs = $consultation->getObservations() ?? '';
+                    $consultation->setObservations($obs . (!empty($obs) ? "\n" : '') . 'SpO2 : ' . $data['saturation_oxygene'] . '%');
+                }
 
                 // Lier au RDV si fourni
                 if (!empty($data['rdv_id'])) {
@@ -142,13 +153,11 @@ class ConsultationController extends AbstractController
             $consultation->setObservations($data['observations'] ?? null);
             $consultation->setDiagnostic($data['diagnostic'] ?? null);
             $consultation->setTraitement($data['traitement'] ?? null);
-            $consultation->setOrdonnance($data['ordonnance'] ?? null);
-            $consultation->setPoids($data['poids'] ?? null);
-            $consultation->setTaille($data['taille'] ?? null);
-            $consultation->setTensionArterielle($data['tension_arterielle'] ?? null);
-            $consultation->setTemperature($data['temperature'] ?? null);
-            $consultation->setFrequenceCardiaque($data['frequence_cardiaque'] ?? null);
-            $consultation->setSaturationOxygene($data['saturation_oxygene'] ?? null);
+            $consultation->setPoids(!empty($data['poids']) ? (float)$data['poids'] : null);
+            $consultation->setTaille(!empty($data['taille']) ? (float)$data['taille'] : null);
+            $consultation->setTension($data['tension_arterielle'] ?? $data['tension'] ?? null);
+            $consultation->setTemperature(!empty($data['temperature']) ? (float)$data['temperature'] : null);
+            $consultation->setFrequenceCardiaque(!empty($data['frequence_cardiaque']) ? (int)$data['frequence_cardiaque'] : null);
 
             if (!empty($data['statut'])) $consultation->setStatut($data['statut']);
 
@@ -157,7 +166,7 @@ class ConsultationController extends AbstractController
             return $this->redirectToRoute('app_consultation_show', ['id' => $consultation->getId()]);
         }
 
-        $actesExamens = $this->acteRepo->findBy(['actif' => true, 'type' => ['examen', 'soin']], ['libelle' => 'ASC']);
+        $actesExamens = $this->acteRepo->findByCategories(['examen', 'soin']);
         return $this->render('consultation/edit.html.twig', [
             'consultation' => $consultation,
             'actes_examens' => $actesExamens,

@@ -52,5 +52,22 @@ class ActeMedical
     public function isActif(): bool { return $this->actif; }
     public function setActif(bool $v): static { $this->actif = $v; return $this; }
 
+    // ─── Alias de compatibilité ────────────────────────────────────────────
+
+    /**
+     * Alias de getDesignation() — utilisé dans certains templates / contrôleurs
+     */
+    public function getLibelle(): string { return $this->designation; }
+
+    /**
+     * Alias de getPrixPrisEnCharge() — orthographe alternative
+     */
+    public function getPrixPriseEnCharge(): float { return (float)$this->prixPrisEnCharge; }
+
+    /**
+     * Alias de getCategorie() — utilisé dans les anciens appels ->type
+     */
+    public function getType(): ?string { return $this->categorie; }
+
     public function __toString(): string { return $this->designation; }
 }

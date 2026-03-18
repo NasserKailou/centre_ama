@@ -64,7 +64,7 @@
                         <div class="form-check border rounded p-2">
                             <input class="form-check-input" type="checkbox" name="examens[]" value="{{ acte.id }}" id="examen_{{ acte.id }}">
                             <label class="form-check-label" for="examen_{{ acte.id }}" style="font-size:13px;cursor:pointer;">
-                                <span class="fw-semibold">{{ acte.libelle }}</span>
+                                <span class="fw-semibold">{{ acte.designation }}</span>
                                 <span class="text-muted ms-1">({{ acte.prixNormal|number_format(0, ',', ' ') }} F)</span>
                             </label>
                         </div>

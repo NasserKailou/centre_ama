@@ -1,14 +1,16 @@
 {% extends 'base.html.twig' %}
 {% block title %}Caisse - CSI{% endblock %}
-{% block page_title %}<i class="fas fa-cash-register me-2 text-primary"></i>Caisse & Facturation{% endblock %}
+{% block page_title %}<i class="fas fa-cash-register me-2 text-primary"></i>Caisse &amp; Facturation{% endblock %}
+
 {% block content %}
+{# ── KPI du jour ─────────────────────────────────────────────────── #}
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="stat-card">
             <div class="stat-icon stat-icon-green"><i class="fas fa-coins"></i></div>
             <div class="stat-content">
                 <div class="stat-value">{{ stats_jour.total_encaisse|number_format(0, ',', ' ') }}</div>
-                <div class="stat-label">Encaissé Aujourd'hui (FCFA)</div>
+                <div class="stat-label">Encaissé Aujourd'hui ({{ currency }})</div>
             </div>
         </div>
     </div>
@@ -31,46 +33,73 @@
         </div>
     </div>
 </div>
+
+{# ── Tableau factures ─────────────────────────────────────────────── #}
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <form method="get" class="d-flex gap-2 flex-wrap align-items-center">
-            <input type="text" name="search" value="{{ search }}" class="form-control form-control-sm" style="width:200px;" placeholder="Rechercher…">
-            <input type="date" name="date" value="{{ date_filter }}" class="form-control form-control-sm">
-            <select name="statut" class="form-select form-select-sm" style="width:140px;">
+            <input type="text"  name="search" value="{{ search }}"        class="form-control form-control-sm" style="width:200px;" placeholder="Rechercher…">
+            <input type="date"  name="date"   value="{{ date_filter }}"   class="form-control form-control-sm">
+            <select name="statut" class="form-select form-select-sm" style="width:150px;">
                 <option value="">Tous statuts</option>
-                <option value="paye" {{ statut_filter == 'paye' ? 'selected' : '' }}>Payé</option>
+                <option value="paye"       {{ statut_filter == 'paye'       ? 'selected' : '' }}>Payé</option>
                 <option value="en_attente" {{ statut_filter == 'en_attente' ? 'selected' : '' }}>En attente</option>
+                <option value="partiel"    {{ statut_filter == 'partiel'    ? 'selected' : '' }}>Partiel</option>
             </select>
-            <button type="submit" class="btn btn-primary btn-sm">Filtrer</button>
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search me-1"></i>Filtrer</button>
         </form>
-        <a href="{{ path('app_caisse_new') }}" class="btn btn-success btn-sm">
-            <i class="fas fa-plus me-1"></i>Nouvelle Facture
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ path('app_caisse_situation_journaliere') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-chart-bar me-1"></i>Situation journalière
+            </a>
+            <a href="{{ path('app_caisse_new') }}" class="btn btn-success btn-sm">
+                <i class="fas fa-plus me-1"></i>Nouvelle Facture
+            </a>
+        </div>
     </div>
+
     <div class="card-body p-0">
         <table class="table table-modern mb-0">
             <thead>
                 <tr>
-                    <th>N° Facture</th><th>Patient</th><th>Montant Total</th><th>Part Patient</th><th>Caissier</th><th>Date</th><th>Statut</th><th>Actions</th>
+                    <th>N° Facture</th>
+                    <th>Patient</th>
+                    <th>Montant Total</th>
+                    <th>Part Patient</th>
+                    <th>Mode Paiement</th>
+                    <th>Caissier</th>
+                    <th>Date</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for facture in pagination %}
+            {% for facture in pagination %}
                 <tr>
-                    <td><span class="badge bg-primary-subtle text-primary fw-semibold">{{ facture.numeroFacture }}</span></td>
+                    <td>
+                        <span class="badge bg-primary-subtle text-primary fw-semibold">{{ facture.numero }}</span>
+                    </td>
                     <td>
                         <div class="fw-semibold" style="font-size:13px;">{{ facture.patient.nomComplet }}</div>
                         <div class="text-muted" style="font-size:11px;">{{ facture.patient.telephone }}</div>
                     </td>
-                    <td class="fw-bold">{{ facture.montantTotal|number_format(0, ',', ' ') }} FCFA</td>
+                    <td class="fw-bold">{{ facture.montantTotal|number_format(0, ',', ' ') }} {{ currency }}</td>
                     <td>
-                        <span class="fw-semibold text-primary">{{ facture.partPatient|number_format(0, ',', ' ') }} FCFA</span>
-                        {% if facture.partenaire %}<div style="font-size:10px;color:#64748b;">{{ facture.partenaire.nom }}</div>{% endif %}
+                        <span class="fw-semibold text-primary">{{ facture.partPatient|number_format(0, ',', ' ') }} {{ currency }}</span>
+                        {% if facture.partenaire %}
+                            <div style="font-size:10px;color:#64748b;">{{ facture.partenaire.nom }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <small class="text-muted text-capitalize">
+                            <i class="fas {{ facture.modePaiement == 'cash' ? 'fa-money-bill' : (facture.modePaiement == 'mobile_money' ? 'fa-mobile-alt' : 'fa-university') }} me-1"></i>
+                            {{ facture.modePaiement|replace({'_': ' '}) }}
+                        </small>
                     </td>
                     <td><small class="text-muted">{{ facture.caissier.nomComplet }}</small></td>
                     <td><small class="text-muted">{{ facture.createdAt|date('d/m/Y H:i') }}</small></td>
                     <td>
-                        <span class="badge {{ facture.statut == 'paye' ? 'bg-success' : (facture.statut == 'en_attente' ? 'bg-warning text-dark' : 'bg-secondary') }}">
+                        <span class="badge {{ facture.statut == 'paye' ? 'bg-success' : (facture.statut == 'en_attente' ? 'bg-warning text-dark' : (facture.statut == 'partiel' ? 'bg-info' : 'bg-secondary')) }}">
                             {{ facture.statutLibelle }}
                         </span>
                     </td>
@@ -79,17 +108,31 @@
                             <a href="{{ path('app_caisse_recu', {'id': facture.id}) }}" class="btn btn-outline-primary" title="Reçu">
                                 <i class="fas fa-receipt"></i>
                             </a>
+                            <a href="{{ path('app_caisse_facture_show', {'id': facture.id}) }}" class="btn btn-outline-secondary" title="Détail">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{{ path('app_caisse_imprimer', {'id': facture.id}) }}" class="btn btn-outline-dark" target="_blank" title="Imprimer">
+                                <i class="fas fa-print"></i>
+                            </a>
                         </div>
                     </td>
                 </tr>
-                {% else %}
-                <tr><td colspan="8" class="text-center py-5 text-muted">Aucune facture trouvée</td></tr>
-                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="fas fa-file-invoice fa-3x mb-3 d-block opacity-25"></i>
+                        Aucune facture trouvée pour ce filtre
+                    </td>
+                </tr>
+            {% endfor %}
             </tbody>
         </table>
     </div>
+
     {% if pagination.pageCount > 1 %}
-    <div class="card-footer bg-transparent">{{ knp_pagination_render(pagination) }}</div>
+    <div class="card-footer bg-transparent">
+        {{ knp_pagination_render(pagination) }}
+    </div>
     {% endif %}
 </div>
 {% endblock %}

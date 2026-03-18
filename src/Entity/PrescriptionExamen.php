@@ -9,6 +9,11 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'prescription_examen')]
 class PrescriptionExamen
 {
+    // ─── Constantes statut ────────────────────────────────────────────────
+    const STATUT_PRESCRIT       = 'prescrit';
+    const STATUT_EN_COURS       = 'en_cours';
+    const STATUT_RESULTAT_SAISI = 'resultat_saisi';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -18,11 +23,22 @@ class PrescriptionExamen
     #[ORM\JoinColumn(nullable: false)]
     private Consultation $consultation;
 
+    /**
+     * Lien vers l'acte médical de type examen (nullable pour rétrocompatibilité).
+     * Si null, on utilise typeExamen (champ texte libre).
+     */
+    #[ORM\ManyToOne(targetEntity: ActeMedical::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?ActeMedical $acteMedical = null;
+
     #[ORM\Column(length: 200)]
-    private string $typeExamen;
+    private string $typeExamen = '';
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $instructions = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $notes = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $resultat = null;
@@ -52,11 +68,25 @@ class PrescriptionExamen
     public function getConsultation(): Consultation { return $this->consultation; }
     public function setConsultation(Consultation $v): static { $this->consultation = $v; return $this; }
 
+    public function getActeMedical(): ?ActeMedical { return $this->acteMedical; }
+    public function setActeMedical(?ActeMedical $v): static
+    {
+        $this->acteMedical = $v;
+        // Synchronise le champ texte si l'acte est fourni
+        if ($v) {
+            $this->typeExamen = $v->getDesignation();
+        }
+        return $this;
+    }
+
     public function getTypeExamen(): string { return $this->typeExamen; }
     public function setTypeExamen(string $v): static { $this->typeExamen = $v; return $this; }
 
     public function getInstructions(): ?string { return $this->instructions; }
     public function setInstructions(?string $v): static { $this->instructions = $v; return $this; }
+
+    public function getNotes(): ?string { return $this->notes; }
+    public function setNotes(?string $v): static { $this->notes = $v; return $this; }
 
     public function getResultat(): ?string { return $this->resultat; }
     public function setResultat(?string $v): static { $this->resultat = $v; return $this; }

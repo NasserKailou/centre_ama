@@ -1,0 +1,180 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ partenaire.nom }} - Partenaire - CSI{% endblock %}
+{% block page_title %}<i class="fas fa-handshake me-2 text-primary"></i>{{ partenaire.nom }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ path('app_partenaire_index') }}">Partenaires</a></li>
+            <li class="breadcrumb-item active">{{ partenaire.nom }}</li>
+        </ol>
+    </nav>
+    <div class="d-flex gap-2">
+        <a href="{{ path('app_partenaire_situation', {'id': partenaire.id}) }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-file-invoice me-1"></i>Situation
+        </a>
+        {% if is_granted('ROLE_ADMIN') %}
+        <a href="{{ path('app_partenaire_edit', {'id': partenaire.id}) }}" class="btn btn-warning btn-sm">
+            <i class="fas fa-edit me-1"></i>Modifier
+        </a>
+        {% endif %}
+        <a href="{{ path('app_partenaire_index') }}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Retour
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    {# Informations du partenaire #}
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-header-title"><i class="fas fa-info-circle me-2 text-primary"></i>Informations</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td class="text-muted">Nom</td>
+                        <td class="fw-bold">{{ partenaire.nom }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Type</td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary text-capitalize">{{ partenaire.type }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Taux PEC</td>
+                        <td class="fw-bold text-success">{{ partenaire.tauxPriseEnCharge }}%</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Téléphone</td>
+                        <td>{{ partenaire.telephone ?? '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Email</td>
+                        <td>{{ partenaire.email ?? '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Contact</td>
+                        <td>{{ partenaire.contact ?? '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">N° Contrat</td>
+                        <td>{{ partenaire.numeroContrat ?? '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Statut</td>
+                        <td>
+                            <span class="badge {{ partenaire.actif ? 'bg-success' : 'bg-secondary' }}">
+                                {{ partenaire.actif ? 'Actif' : 'Inactif' }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% if partenaire.adresse %}
+                    <tr>
+                        <td class="text-muted">Adresse</td>
+                        <td>{{ partenaire.adresse }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if partenaire.description %}
+                    <tr>
+                        <td class="text-muted">Description</td>
+                        <td>{{ partenaire.description }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# Statistiques période courante #}
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-header-title"><i class="fas fa-chart-bar me-2 text-success"></i>Statistiques</h5>
+                <form method="GET" class="d-flex gap-2 align-items-center">
+                    <input type="date" name="date_debut" value="{{ date_debut }}" class="form-control form-control-sm">
+                    <span class="text-muted">au</span>
+                    <input type="date" name="date_fin" value="{{ date_fin }}" class="form-control form-control-sm">
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-filter"></i></button>
+                </form>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <div class="fw-bold fs-4 text-primary">{{ stats.nbPatients ?? 0 }}</div>
+                            <div class="text-muted small">Patients</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <div class="fw-bold fs-4 text-info">{{ stats.nbFactures ?? 0 }}</div>
+                            <div class="text-muted small">Factures</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <div class="fw-bold fs-5 text-success">{{ (stats.montantBrut ?? 0)|number_format(0, ',', ' ') }}</div>
+                            <div class="text-muted small">Montant brut</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <div class="fw-bold fs-5 text-warning">{{ (stats.partAssurance ?? 0)|number_format(0, ',', ' ') }}</div>
+                            <div class="text-muted small">Part assurance</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Dernières factures #}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-header-title"><i class="fas fa-file-invoice me-2 text-primary"></i>Factures</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>N° Facture</th>
+                            <th>Patient</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">Assurance</th>
+                            <th class="text-end">Patient</th>
+                            <th>Date</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for facture in factures %}
+                        <tr>
+                            <td><span class="badge bg-primary-subtle text-primary">{{ facture.numero }}</span></td>
+                            <td>{{ facture.patient.nomComplet }}</td>
+                            <td class="text-end">{{ facture.montantTotal|number_format(0, ',', ' ') }}</td>
+                            <td class="text-end text-info">{{ facture.partAssurance|number_format(0, ',', ' ') }}</td>
+                            <td class="text-end fw-semibold">{{ facture.partPatient|number_format(0, ',', ' ') }}</td>
+                            <td><small class="text-muted">{{ facture.createdAt|date('d/m/Y') }}</small></td>
+                            <td>
+                                <span class="badge {{ facture.statut == 'paye' ? 'bg-success' : 'bg-warning text-dark' }}">
+                                    {{ facture.statutLibelle }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                Aucune facture sur cette période
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

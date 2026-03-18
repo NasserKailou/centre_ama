@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+{% block title %}Modifier {{ partenaire.nom }} - CSI{% endblock %}
+{% block page_title %}<i class="fas fa-edit me-2 text-warning"></i>Modifier : {{ partenaire.nom }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}">Accueil</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('app_partenaire_index') }}">Partenaires</a></li>
+        <li class="breadcrumb-item active">Modifier</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-header-title">
+                    <i class="fas fa-edit me-2 text-warning"></i>Modifier le Partenaire
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ path('app_partenaire_edit', {'id': partenaire.id}) }}">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Nom du partenaire <span class="text-danger">*</span></label>
+                            <input type="text" name="nom" class="form-control" required value="{{ partenaire.nom }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Type</label>
+                            <select name="type" class="form-select">
+                                <option value="assurance"  {{ partenaire.type == 'assurance'  ? 'selected' : '' }}>Assurance</option>
+                                <option value="mutuelle"   {{ partenaire.type == 'mutuelle'   ? 'selected' : '' }}>Mutuelle</option>
+                                <option value="etat"       {{ partenaire.type == 'etat'       ? 'selected' : '' }}>État / Ministère</option>
+                                <option value="entreprise" {{ partenaire.type == 'entreprise' ? 'selected' : '' }}>Entreprise</option>
+                                <option value="autre"      {{ partenaire.type == 'autre'      ? 'selected' : '' }}>Autre</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Taux de prise en charge (%)</label>
+                            <input type="number" name="taux_prise_en_charge" class="form-control"
+                                   value="{{ partenaire.tauxPriseEnCharge }}" min="0" max="100" step="0.5">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Téléphone</label>
+                            <input type="tel" name="telephone" class="form-control" value="{{ partenaire.telephone ?? '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" name="email" class="form-control" value="{{ partenaire.email ?? '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Personne de contact</label>
+                            <input type="text" name="contact" class="form-control" value="{{ partenaire.contact ?? '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Numéro de contrat</label>
+                            <input type="text" name="numero_contrat" class="form-control" value="{{ partenaire.numeroContrat ?? '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Adresse</label>
+                            <textarea name="adresse" class="form-control" rows="2">{{ partenaire.adresse ?? '' }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Description / Notes</label>
+                            <textarea name="description" class="form-control" rows="2">{{ partenaire.description ?? '' }}</textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Statut</label>
+                            <select name="actif" class="form-select">
+                                <option value="1" {{ partenaire.actif ? 'selected' : '' }}>Actif</option>
+                                <option value="0" {{ not partenaire.actif ? 'selected' : '' }}>Inactif</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a href="{{ path('app_partenaire_show', {'id': partenaire.id}) }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-1"></i>Enregistrer les modifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

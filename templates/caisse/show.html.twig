@@ -1,0 +1,160 @@
+{% extends 'base.html.twig' %}
+{% block title %}Facture {{ facture.numero }} - CSI{% endblock %}
+{% block page_title %}<i class="fas fa-file-invoice me-2 text-primary"></i>Facture {{ facture.numero }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_caisse_index') }}">Caisse</a></li>
+            <li class="breadcrumb-item active">{{ facture.numero }}</li>
+        </ol>
+    </nav>
+    <div class="d-flex gap-2">
+        <a href="{{ path('app_caisse_recu', {'id': facture.id}) }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-receipt me-1"></i>Reçu
+        </a>
+        <a href="{{ path('app_caisse_imprimer', {'id': facture.id}) }}" class="btn btn-outline-dark btn-sm" target="_blank">
+            <i class="fas fa-print me-1"></i>Imprimer
+        </a>
+        <a href="{{ path('app_caisse_index') }}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Retour
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    {# ── Informations générales ──────────────────────────────────── #}
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-header-title">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>Informations de la Facture
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small fw-semibold">Patient</label>
+                        <p class="mb-0 fw-bold">{{ facture.patient.nomComplet }}</p>
+                        <small class="text-muted">{{ facture.patient.telephone }}</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small fw-semibold">Caissier</label>
+                        <p class="mb-0">{{ facture.caissier.nomComplet }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small fw-semibold">Date de création</label>
+                        <p class="mb-0">{{ facture.createdAt|date('d/m/Y H:i') }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small fw-semibold">Mode de paiement</label>
+                        <p class="mb-0 text-capitalize">{{ facture.modePaiement|replace({'_': ' '}) }}</p>
+                    </div>
+                    {% if facture.partenaire %}
+                    <div class="col-md-6">
+                        <label class="text-muted small fw-semibold">Assurance</label>
+                        <p class="mb-0">{{ facture.partenaire.nom }}</p>
+                        <small class="text-muted">Taux prise en charge : {{ facture.tauxAssurance }}%</small>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6">
+                        <label class="text-muted small fw-semibold">Statut</label>
+                        <p class="mb-0">
+                            <span class="badge {{ facture.statut == 'paye' ? 'bg-success' : (facture.statut == 'partiel' ? 'bg-info' : 'bg-warning text-dark') }}">
+                                {{ facture.statutLibelle }}
+                            </span>
+                        </p>
+                    </div>
+                    {% if facture.notes %}
+                    <div class="col-12">
+                        <label class="text-muted small fw-semibold">Notes</label>
+                        <p class="mb-0">{{ facture.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# ── Lignes de facturation ──────────────────────────────── #}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-header-title"><i class="fas fa-list me-2 text-primary"></i>Détail des Prestations</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>Désignation</th>
+                            <th>Type</th>
+                            <th class="text-center">Qté</th>
+                            <th class="text-end">Prix U.</th>
+                            <th class="text-end">Sous-total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for ligne in facture.lignes %}
+                        <tr>
+                            <td>{{ ligne.designation }}</td>
+                            <td>
+                                <span class="badge {{ ligne.typeLigne == 'produit' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary' }}">
+                                    {{ ligne.typeLigne == 'produit' ? 'Pharmacie' : 'Acte médical' }}
+                                </span>
+                            </td>
+                            <td class="text-center">{{ ligne.quantite }}</td>
+                            <td class="text-end">{{ ligne.prixUnitaire|number_format(0, ',', ' ') }}</td>
+                            <td class="text-end fw-semibold">{{ ligne.sousTotal|number_format(0, ',', ' ') }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# ── Récapitulatif financier ──────────────────────────────────── #}
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-header-title"><i class="fas fa-calculator me-2 text-success"></i>Récapitulatif</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td class="text-muted">Actes médicaux</td>
+                        <td class="text-end fw-semibold">{{ facture.montantActes|number_format(0, ',', ' ') }} {{ currency }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Pharmacie</td>
+                        <td class="text-end fw-semibold">{{ facture.montantPharmacie|number_format(0, ',', ' ') }} {{ currency }}</td>
+                    </tr>
+                    <tr class="border-top">
+                        <td class="fw-bold">Total brut</td>
+                        <td class="text-end fw-bold">{{ facture.montantTotal|number_format(0, ',', ' ') }} {{ currency }}</td>
+                    </tr>
+                    {% if facture.partenaire %}
+                    <tr class="text-info">
+                        <td>Part assurance ({{ facture.tauxAssurance }}%)</td>
+                        <td class="text-end">- {{ facture.partAssurance|number_format(0, ',', ' ') }} {{ currency }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="border-top">
+                        <td class="fw-bold text-primary">Part patient</td>
+                        <td class="text-end fw-bold text-primary fs-5">{{ facture.partPatient|number_format(0, ',', ' ') }} {{ currency }}</td>
+                    </tr>
+                    {% if facture.montantRecu > 0 %}
+                    <tr class="text-success">
+                        <td>Montant reçu</td>
+                        <td class="text-end">{{ facture.montantRecu|number_format(0, ',', ' ') }} {{ currency }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Monnaie rendue</td>
+                        <td class="text-end">{{ facture.monnaieRendue|number_format(0, ',', ' ') }} {{ currency }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

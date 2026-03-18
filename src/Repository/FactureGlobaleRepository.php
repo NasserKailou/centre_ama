@@ -299,7 +299,7 @@ class FactureGlobaleRepository extends ServiceEntityRepository
     {
         $qb = $this->getEntityManager()->createQueryBuilder()
             ->select(
-                'am.libelle as designation',
+                'am.designation as designation',
                 'COUNT(lf.id) as count',
                 'SUM(lf.sousTotal) as montant'
             )
@@ -331,7 +331,7 @@ class FactureGlobaleRepository extends ServiceEntityRepository
     {
         return $this->getEntityManager()->createQueryBuilder()
             ->select(
-                'pp.nom as designation',
+                'pp.designation as designation',
                 'pp.categorie',
                 'SUM(lf.quantite) as qteVendue',
                 'pp.prixVente as prixUnitaire',

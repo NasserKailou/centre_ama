@@ -65,8 +65,8 @@
                 <select name="partenaire_id" id="partenaireSelect" class="form-select">
                     <option value="">Sans prise en charge (Patient paie 100%)</option>
                     {% for partenaire in partenaires %}
-                    <option value="{{ partenaire.id }}" data-taux="{{ partenaire.tauxCouverture }}">
-                        {{ partenaire.nom }} (Couverture: {{ partenaire.tauxCouverture }}%)
+                    <option value="{{ partenaire.id }}" data-taux="{{ partenaire.tauxPriseEnCharge }}">
+                        {{ partenaire.nom }} (Couverture: {{ partenaire.tauxPriseEnCharge }}%)
                     </option>
                     {% endfor %}
                 </select>
@@ -184,8 +184,8 @@
                 {% for acte in actes_medicaux|slice(0,10) %}
                 <button type="button" 
                         class="btn btn-outline-primary btn-sm m-1" 
-                        onclick="ajouterActeRapide({{ acte.id }}, '{{ acte.libelle|e('js') }}', {{ acte.prixNormal }}, {{ acte.prixPriseEnCharge ?? acte.prixNormal }})">
-                    {{ acte.libelle|slice(0,22) }}{% if acte.libelle|length > 22 %}…{% endif %}
+                        onclick="ajouterActeRapide({{ acte.id }}, '{{ acte.designation|e('js') }}', {{ acte.prixNormal }}, {{ acte.prixPrisEnCharge ?? acte.prixNormal }})">
+                    {{ acte.designation|slice(0,22) }}{% if acte.designation|length > 22 %}…{% endif %}
                 </button>
                 {% endfor %}
             </div>
@@ -214,21 +214,21 @@
                     <div class="acte-item border rounded p-3 mb-2 cursor-pointer" 
                          style="cursor:pointer;transition:background .15s;"
                          data-id="{{ acte.id }}"
-                         data-libelle="{{ acte.libelle }}"
+                         data-libelle="{{ acte.designation }}"
                          data-prix-normal="{{ acte.prixNormal }}"
-                         data-prix-pec="{{ acte.prixPriseEnCharge ?? acte.prixNormal }}"
+                         data-prix-pec="{{ acte.prixPrisEnCharge ?? acte.prixNormal }}"
                          onmouseover="this.style.background='#f0f7ff'" 
                          onmouseout="this.style.background=''"
                          onclick="ajouterActe(this)">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <span class="fw-semibold">{{ acte.libelle }}</span>
+                                <span class="fw-semibold">{{ acte.designation }}</span>
                                 <span class="badge bg-secondary ms-2" style="font-size:10px;">{{ acte.typeLibelle }}</span>
                             </div>
                             <div class="text-end">
                                 <div class="fw-bold text-primary">{{ acte.prixNormal|number_format(0, ',', ' ') }} FCFA</div>
-                                {% if acte.prixPriseEnCharge %}
-                                <div style="font-size:11px;color:#64748b;">PEC: {{ acte.prixPriseEnCharge|number_format(0, ',', ' ') }}</div>
+                                {% if acte.prixPrisEnCharge %}
+                                <div style="font-size:11px;color:#64748b;">PEC: {{ acte.prixPrisEnCharge|number_format(0, ',', ' ') }}</div>
                                 {% endif %}
                             </div>
                         </div>

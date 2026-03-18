@@ -71,6 +71,15 @@ class FactureGlobale
     #[ORM\Column(length: 20, options: ['default' => 'cash'])]
     private string $modePaiement = 'cash'; // cash, mobile_money, cheque, virement
 
+    #[ORM\Column(type: 'decimal', precision: 12, scale: 2, options: ['default' => 0])]
+    private float $montantRecu = 0;
+
+    #[ORM\Column(type: 'decimal', precision: 12, scale: 2, options: ['default' => 0])]
+    private float $monnaieRendue = 0;
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $datePaiement = null;
+
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $notes = null;
 
@@ -130,6 +139,15 @@ class FactureGlobale
     public function getNotes(): ?string { return $this->notes; }
     public function setNotes(?string $v): static { $this->notes = $v; return $this; }
 
+    public function getMontantRecu(): float { return (float)$this->montantRecu; }
+    public function setMontantRecu(float $v): static { $this->montantRecu = $v; return $this; }
+
+    public function getMonnaieRendue(): float { return (float)$this->monnaieRendue; }
+    public function setMonnaieRendue(float $v): static { $this->monnaieRendue = $v; return $this; }
+
+    public function getDatePaiement(): ?\DateTimeInterface { return $this->datePaiement; }
+    public function setDatePaiement(?\DateTimeInterface $v): static { $this->datePaiement = $v; return $this; }
+
     public function getCreatedAt(): \DateTimeInterface { return $this->createdAt; }
     public function setCreatedAt(\DateTimeInterface $v): static { $this->createdAt = $v; return $this; }
 
@@ -150,7 +168,7 @@ class FactureGlobale
 
     public function recalculerTotaux(): void
     {
-        $totalActes    = 0;
+        $totalActes     = 0;
         $totalPharmacie = 0;
         foreach ($this->lignes as $ligne) {
             if ($ligne->getTypeLigne() === 'produit') {
@@ -166,4 +184,24 @@ class FactureGlobale
         $this->partAssurance    = round($total * ($this->tauxAssurance / 100), 2);
         $this->partPatient      = round($total - $this->partAssurance, 2);
     }
+
+    // ─── Alias et helpers ─────────────────────────────────────────────────
+
+    /** Alias de getNumero() pour rétrocompatibilité */
+    public function getNumeroFacture(): string { return $this->numero; }
+
+    /** Libellé lisible du statut */
+    public function getStatutLibelle(): string
+    {
+        return match($this->statut) {
+            'paye'       => 'Payé',
+            'en_attente' => 'En attente',
+            'partiel'    => 'Partiel',
+            'annule'     => 'Annulé',
+            default      => ucfirst($this->statut),
+        };
+    }
+
+    /** Alias calculerTotaux() pour rétrocompatibilité */
+    public function calculerTotaux(): void { $this->recalculerTotaux(); }
 }
