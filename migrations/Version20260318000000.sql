@@ -256,14 +256,75 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- DONNÉES INITIALES
 -- ============================================================
 
--- Utilisateur admin par défaut (mdp: Admin@2024)
-INSERT IGNORE INTO `user` (email, roles, password, nom, prenom, actif) VALUES
+-- ============================================================
+-- UTILISATEURS DE TEST
+-- ============================================================
+-- Les mots de passe utilisent bcrypt ($2y$ compatible PHP/Symfony)
+-- $2b$ (Python) = $2y$ (PHP) : compatibles à 100%
+-- ============================================================
+
+-- 1. Administrateur (mdp: Admin@2024)
+INSERT IGNORE INTO `user` (email, roles, password, nom, prenom, telephone, specialite, actif) VALUES
 (
     'admin@csi.ne',
     '["ROLE_ADMIN"]',
-    '$2y$13$hX.8I2qHSm/yvzKdxzBdZOhUf/b5rO.8DLq2Vq.WpNUWBhRqpVoJO',
-    'Admin',
+    '$2b$12$qMaRQsMD1GcxzHORBS4I8uyyOWIT/RYBG79r02WwYgqoJPkJdcxiC',
     'Système',
+    'Admin',
+    '+227 20 00 00 00',
+    NULL,
+    1
+);
+
+-- 2. Médecin généraliste (mdp: Medecin@2024)
+INSERT IGNORE INTO `user` (email, roles, password, nom, prenom, telephone, specialite, actif) VALUES
+(
+    'dr.kollo@csi.ne',
+    '["ROLE_MEDECIN"]',
+    '$2b$12$gtj5fc9yquWvqsthxuwqiODkFbu44Fr3zrASm8TeF.waB7W93A4WS',
+    'Kollo',
+    'Ibrahim',
+    '+227 96 11 22 33',
+    'Médecine générale',
+    1
+);
+
+-- 3. Médecin spécialiste (mdp: Medecin@2024)
+INSERT IGNORE INTO `user` (email, roles, password, nom, prenom, telephone, specialite, actif) VALUES
+(
+    'dr.maiga@csi.ne',
+    '["ROLE_MEDECIN"]',
+    '$2b$12$gtj5fc9yquWvqsthxuwqiODkFbu44Fr3zrASm8TeF.waB7W93A4WS',
+    'Maïga',
+    'Fatouma',
+    '+227 97 44 55 66',
+    'Pédiatrie',
+    1
+);
+
+-- 4. Caissier (mdp: Caissier@2024)
+INSERT IGNORE INTO `user` (email, roles, password, nom, prenom, telephone, specialite, actif) VALUES
+(
+    'caisse@csi.ne',
+    '["ROLE_CAISSIER"]',
+    '$2b$12$BYnG.0Ed7mFZb/TN9.ITAOHx8ZsZ1.FDiq5lZ.z514CjEPGzbybyS',
+    'Hamidou',
+    'Ramatou',
+    '+227 90 77 88 99',
+    NULL,
+    1
+);
+
+-- 5. Assistant(e) médical(e) (mdp: Assistant@2024)
+INSERT IGNORE INTO `user` (email, roles, password, nom, prenom, telephone, specialite, actif) VALUES
+(
+    'assistant@csi.ne',
+    '["ROLE_ASSISTANT"]',
+    '$2b$12$XLXhJsRpE3RYQZ79gF9fM.kseVOb3jplpbasUDrr3NQeGf6vgOAJ.',
+    'Issoufou',
+    'Mariama',
+    '+227 99 12 34 56',
+    NULL,
     1
 );
 
@@ -295,3 +356,51 @@ INSERT IGNORE INTO partenaire (nom, type, taux_prise_en_charge, actif) VALUES
 ('Sanlam Vie Niger',            'assurance',  75, 1),
 ('Mutuelle Générale',           'mutuelle',   70, 1),
 ('Ministère de la Santé',       'etat',       100, 1);
+
+-- ============================================================
+-- DONNÉES DE DÉMONSTRATION
+-- Patients, consultations et RDV fictifs pour tester l'appli
+-- ============================================================
+
+-- Patients de démonstration
+INSERT IGNORE INTO patient (numero_dossier, nom, prenom, telephone, date_naissance, sexe, groupe_sanguin, adresse, allergies, antecedents_medicaux, profession, partenaire_id, created_at) VALUES
+('CSI-2026-001', 'Moussa',    'Abdou',      '+227 96 01 01 01', '1985-03-15', 'M', 'O+',  'Niamey - Plateau',      NULL,               'Hypertension artérielle', 'Fonctionnaire',  1, '2026-01-10 08:00:00'),
+('CSI-2026-002', 'Hassane',   'Aïchatou',   '+227 97 02 02 02', '1992-07-22', 'F', 'A+',  'Niamey - Yantala',      'Pénicilline',      NULL,                      'Commerçante',    2, '2026-01-15 09:30:00'),
+('CSI-2026-003', 'Issa',      'Boubacar',   '+227 99 03 03 03', '1978-11-05', 'M', 'B+',  'Niamey - Talladjé',     NULL,               'Diabète type 2',          'Enseignant',     NULL, '2026-01-20 10:00:00'),
+('CSI-2026-004', 'Mahamane',  'Halima',     '+227 90 04 04 04', '2018-04-10', 'F', 'O-',  'Niamey - Koira Kano',   NULL,               NULL,                      NULL,             NULL, '2026-02-01 08:30:00'),
+('CSI-2026-005', 'Oumarou',   'Zeinabou',   '+227 96 05 05 05', '1965-09-30', 'F', 'AB+', 'Tillabéri',             'Aspirine',         'Asthme bronchique',       'Agricultrice',   3, '2026-02-05 14:00:00'),
+('CSI-2026-006', 'Adamou',    'Souleymane', '+227 97 06 06 06', '1990-12-18', 'M', 'A-',  'Niamey - Dar Es Salam', NULL,               NULL,                      'Chauffeur',      NULL, '2026-02-10 11:00:00'),
+('CSI-2026-007', 'Ibrahim',   'Fati',       '+227 99 07 07 07', '2001-06-25', 'F', 'B-',  'Niamey - Gamkalé',      NULL,               NULL,                      'Étudiante',      1, '2026-02-15 09:00:00'),
+('CSI-2026-008', 'Yacouba',   'Moustapha',  '+227 90 08 08 08', '1955-02-14', 'M', 'O+',  'Dosso',                 NULL,               'HTA, Diabète type 2',     'Retraité',       4, '2026-03-01 07:30:00');
+
+-- Rendez-vous de démonstration (médecin ID=2 = Dr Kollo, médecin ID=3 = Dr Maïga)
+INSERT IGNORE INTO rendez_vous (patient_id, medecin_id, date_heure, motif, statut, duree, notes, created_at) VALUES
+(1, 2, DATE_ADD(CURDATE(), INTERVAL 0 DAY) + INTERVAL 8 HOUR,  'Contrôle tension artérielle',         'confirme',  30, NULL,                   NOW()),
+(2, 2, DATE_ADD(CURDATE(), INTERVAL 0 DAY) + INTERVAL 9 HOUR,  'Consultation générale - fièvre',      'planifie',  30, NULL,                   NOW()),
+(4, 3, DATE_ADD(CURDATE(), INTERVAL 0 DAY) + INTERVAL 10 HOUR, 'Consultation pédiatrique - toux',     'planifie',  20, 'Enfant 7 ans',         NOW()),
+(5, 3, DATE_ADD(CURDATE(), INTERVAL 0 DAY) + INTERVAL 11 HOUR, 'Suivi asthme',                        'confirme',  30, NULL,                   NOW()),
+(3, 2, DATE_ADD(CURDATE(), INTERVAL 1 DAY) + INTERVAL 8 HOUR,  'Suivi diabète - bilan trimestriel',   'planifie',  45, 'Apporter résultats',   NOW()),
+(6, 2, DATE_ADD(CURDATE(), INTERVAL 1 DAY) + INTERVAL 9 HOUR,  'Certificat médical visite d\'emploi', 'planifie',  20, NULL,                   NOW()),
+(7, 3, DATE_ADD(CURDATE(), INTERVAL 2 DAY) + INTERVAL 8 HOUR,  'Consultation gynécologique',          'planifie',  30, NULL,                   NOW()),
+(8, 2, DATE_ADD(CURDATE(), INTERVAL 2 DAY) + INTERVAL 10 HOUR, 'Consultation urgence - douleurs',     'planifie',  30, 'Patient âgé, HTA+DT2', NOW());
+
+-- Produits pharmaceutiques de démonstration
+INSERT IGNORE INTO produit_pharmaceutique (designation, dci, reference, categorie, forme, dosage, unite, prix_achat, prix_vente, stock_disponible, stock_minimum, fournisseur, actif, created_at) VALUES
+('Amoxicilline 500mg',          'Amoxicilline',     'AMX-500',  'antibiotique',      'gelule',    '500 mg',    'boite',   1200,  2500,  150,  20, 'LABOREX Niger',  1, NOW()),
+('Paracétamol 500mg',           'Paracétamol',      'PARA-500', 'analgesique',       'comprime',  '500 mg',    'boite',    400,   900,  300,  30, 'LABOREX Niger',  1, NOW()),
+('Ibuprofène 400mg',            'Ibuprofène',       'IBU-400',  'anti-inflammatoire','comprime',  '400 mg',    'boite',    700,  1500,   80,  15, 'COPHARNI',       1, NOW()),
+('Amlodipine 10mg',             'Amlodipine',       'AML-10',   'antihypertenseur',  'comprime',  '10 mg',     'boite',    900,  2000,   60,  10, 'COPHARNI',       1, NOW()),
+('Metformine 850mg',            'Metformine',       'MET-850',  'antidiabetique',    'comprime',  '850 mg',    'boite',    800,  1800,   90,  15, 'LABOREX Niger',  1, NOW()),
+('Salbutamol spray',            'Salbutamol',       'SAL-INH',  'anti-inflammatoire','inhalateur','100µg/dose','flacon',  2500,  6000,   25,   5, 'COPHARNI',       1, NOW()),
+('Quinine 500mg Inj.',          'Quinine',          'QUI-INJ',  'antiparasitaire',   'injectable','500 mg/2ml','ampoule',  350,   800,  200,  30, 'LABOREX Niger',  1, NOW()),
+('Artésunate 200mg',            'Artésunate',       'ART-200',  'antiparasitaire',   'comprime',  '200 mg',    'boite',   1500,  3500,   75,  15, 'LABOREX Niger',  1, NOW()),
+('Sérum physiologique 500ml',   'NaCl 0.9%',        'NaCl-500', 'solution_injectable','solution', '0.9%',      'flacon',   400,   900,  100,  20, 'COPHARNI',       1, NOW()),
+('Vitamine C 500mg',            'Acide ascorbique', 'VIT-C',    'vitamines',         'comprime',  '500 mg',    'boite',    300,   700,  120,  20, 'LABOREX Niger',  1, NOW()),
+('Cotrimoxazole 480mg',         'Cotrimoxazole',    'CTX-480',  'antibiotique',      'comprime',  '480 mg',    'boite',    600,  1200,  100,  20, 'COPHARNI',       1, NOW()),
+('Furosémide 40mg',             'Furosémide',       'FUR-40',   'antihypertenseur',  'comprime',  '40 mg',     'boite',    400,   900,   45,  10, 'LABOREX Niger',  1, NOW());
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================================
+-- FIN DE LA MIGRATION CSI v1.0.0
+-- ============================================================
